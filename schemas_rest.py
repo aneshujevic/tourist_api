@@ -1,5 +1,6 @@
 from flask_marshmallow import fields
-from marshmallow import validate, validates
+from markupsafe import escape
+from marshmallow import validate, validates, pre_load, post_load
 
 from app import ma
 from models import Reservation, AccountType, Arrangement, AccountTypeChangeRequest, User
@@ -24,6 +25,7 @@ class UserSchema(ma.SQLAlchemyAutoSchema):
         load_instance = True
 
     id = ma.auto_field(dump_only=True)
+    username = ma.auto_field(validate=[validate.Length])
     email = ma.auto_field(
         validate=[validate.Email(error="Not a valid email address."),
                   validate.Length(min=5, max=64, error="Invalid length of email address.")]
@@ -32,6 +34,24 @@ class UserSchema(ma.SQLAlchemyAutoSchema):
         validate.Length(min=8, max=256, error="Invalid password length."),
     ])
     account_type = ma.Nested(AccountTypeSchema)
+
+    def get_user_from_jwt_claims(self, data):
+        self.username = data["username"]
+        self.email = data["email"]
+        self.account_type = data["account_type"]
+
+        return self
+
+    @pre_load
+    def process_input(self, data, **kwargs):
+        data["username"] = escape(data["username"].strip())
+        data["first_name"] = escape(data["first_name"].strip())
+        data["last_name"] = escape(data["last_name"].strip())
+        return data
+
+    @post_load
+    def make_user(self, data, **kwargs):
+        return User(**data)
 
 
 user_schema = UserSchema()
@@ -72,6 +92,12 @@ class ArrangementSchema(ma.SQLAlchemyAutoSchema):
         if value <= 0:
             raise validate.ValidationError('Price must not be 0.')
 
+    @pre_load
+    def process_input(self, data, **kwargs):
+        data["description"] = escape(data["description"])
+        data["destination"] = escape(data["destination"])
+        return data
+
 
 arrangement_schema = ArrangementSchema()
 arrangements_schema = ArrangementSchema(many=True)
@@ -102,6 +128,11 @@ class AccountTypeChangeRequestSchema(ma.SQLAlchemyAutoSchema):
     filing_date = ma.auto_field(dump_only=True)
     confirmation_date = ma.auto_field(dump_only=True)
     admin_confirmed = ma.auto_field(dump_only=True)
+
+    @pre_load
+    def process_input(self, data, **kwargs):
+        data["comment"] = escape(data["comment"])
+        return data
 
 
 account_type_change_request_schema = AccountTypeChangeRequestSchema()
