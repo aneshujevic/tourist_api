@@ -5,8 +5,18 @@ from app import db
 
 user_type_table = db.Table('user_type', db.metadata,
                            db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
-                           db.Column('type_id', db.Integer, db.ForeignKey('type.id'), primary_key=True)
+                           db.Column('account_type_id', db.String(64), db.ForeignKey('account_type.id'), primary_key=True)
                            )
+
+
+class AccountType(db.Model):
+    name = db.Column(db.String(64), primary_key=True, nullable=False)
+    users = db.relationship(
+        'User',
+        secondary=user_type_table,
+        back_populates='account_type',
+        lazy='select'
+    )
 
 
 class User(db.Model):
@@ -16,18 +26,7 @@ class User(db.Model):
     first_name = db.Column(db.String(32), nullable=False)
     last_name = db.Column(db.String(32), nullable=False)
     password = db.Column(db.String(256), nullable=False)
-    account_type = db.relationship('type', secondary=user_type_table, back_populates='users', lazy='select')
-
-
-class AccountType(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(16), nullable=False)
-    users = db.relationship(
-        'User',
-        secondary=user_type_table,
-        back_populates='type',
-        lazy='select'
-    )
+    account_type = db.relationship('account_type', secondary=user_type_table, back_populates='users', lazy='select')
 
 
 class Arrangement(db.Model):
@@ -67,8 +66,8 @@ class Reservation(db.Model):
 class AccountTypeChangeRequest(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user = db.Column(db.ForeignKey('user.id'), nullable=False)
-    wanted_type = db.Column(db.ForeignKey('type.id'), nullable=False)
-    permission = db.Column(db.Boolean, nullable=True)
+    wanted_type = db.Column(db.ForeignKey('account_type.id'), nullable=False)
+    granted = db.Column(db.Boolean, nullable=True)
     filing_date = db.Column(db.DateTime, nullable=False)
     confirmation_date = db.Column(db.DateTime, nullable=True)
     admin_confirmed = db.Column(db.ForeignKey('user.id'), nullable=True)

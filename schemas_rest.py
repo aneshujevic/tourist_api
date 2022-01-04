@@ -1,5 +1,5 @@
 from flask_marshmallow import fields
-from marshmallow import validate
+from marshmallow import validate, validates
 
 from app import ma
 from models import Reservation, AccountType, Arrangement, AccountTypeChangeRequest, User
@@ -38,54 +38,70 @@ user_schema = UserSchema()
 users_schema = UserSchema(many=True)
 
 
-class ArrangementSchema(ma.SQLAlchemySchema):
+class ArrangementSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Arrangement
         load_instance = True
 
-    id = ma.auto_field()
-    start_date = ma.auto_field()
-    end_date = ma.auto_field()
-    description = ma.auto_field()
-    destination = ma.auto_field()
-    number_of_seats = ma.auto_field()
-    price = ma.auto_field()
-    guide = ma.auto_field()
-    creator = ma.auto_field()
-    reservations = ma.auto_field()
+    id = ma.auto_field(dump_only=True)
+    creator = ma.auto_field(dump_only=True)
+    description = ma.auto_field(validate=[
+        validate.Length(min=5, error='Description too short, try adding some more comments.')
+    ])
+    destination = ma.auto_field(validate=[
+        validate.Length(min=5, error='Destination too short, try adding some more comments.')
+    ])
+
+    @validates('start_date')
+    def validate_start_date_order(self, value):
+        if value > self.end_date:
+            raise validate.ValidationError('Start date must be before the end date.')
+
+    @validates('end_date')
+    def validate_end_date_order(self, value):
+        if value < self.start_date:
+            raise validate.ValidationError('End date must be after the start date.')
+
+    @validates('number_of_seats')
+    def validate_number_of_seats(self, value):
+        if value <= 0:
+            raise validate.ValidationError('Number of seats must not be 0.')
+
+    @validates('price')
+    def validate_price(self, value):
+        if value <= 0:
+            raise validate.ValidationError('Price must not be 0.')
 
 
 arrangement_schema = ArrangementSchema()
 arrangements_schema = ArrangementSchema(many=True)
 
 
-class ReservationSchema(ma.SQLAlchemySchema):
+class ReservationSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Reservation
         load_instance = True
 
-    customer = ma.auto_field()
-    arrangement = ma.auto_field()
-    seats_needed = ma.auto_field()
+    @validates('seats_needed')
+    def validate_seats_needed(self, value):
+        if value <= 0:
+            raise validate.ValidationError('Seats needed must not be 0.')
 
 
 reservation_schema = ReservationSchema()
 reservations_schema = ReservationSchema(many=True)
 
 
-class AccountTypeChangeRequestSchema(ma.SQLAlchemySchema):
+class AccountTypeChangeRequestSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = AccountTypeChangeRequest
         load_instance = True
 
-    id = ma.auto_field()
-    user = ma.auto_field()
-    wanted_type = ma.auto_field()
-    permission = ma.auto_field()
-    filing_date = ma.auto_field()
-    confirmation_date = ma.auto_field()
-    admin_confirmed = ma.auto_field()
-    comment = ma.auto_field()
+    id = ma.auto_field(dump_only=True)
+    user = ma.auto_field(dump_only=True)
+    filing_date = ma.auto_field(dump_only=True)
+    confirmation_date = ma.auto_field(dump_only=True)
+    admin_confirmed = ma.auto_field(dump_only=True)
 
 
 account_type_change_request_schema = AccountTypeChangeRequestSchema()
