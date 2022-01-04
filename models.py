@@ -15,11 +15,11 @@ class User(db.Model):
     username = db.Column(db.String(32), unique=True, nullable=False)
     first_name = db.Column(db.String(32), nullable=False)
     last_name = db.Column(db.String(32), nullable=False)
-    password = db.Column(db.Text, nullable=False)
+    password = db.Column(db.String(256), nullable=False)
     account_type = db.relationship('type', secondary=user_type_table, back_populates='users', lazy='select')
 
 
-class Type(db.Model):
+class AccountType(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(16), nullable=False)
     users = db.relationship(
