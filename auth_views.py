@@ -1,11 +1,13 @@
 from functools import wraps
 
 import flask_jwt_extended
+import marshmallow
+import sqlalchemy.exc
 from flask import request, Blueprint
 from flask_jwt_extended import verify_jwt_in_request, create_access_token, create_refresh_token, jwt_required, \
     get_jwt_identity
 
-from models import User
+from models import User, AccountType
 from schemas_rest import user_schema
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
@@ -68,3 +70,26 @@ def refresh():
     identity = get_jwt_identity()
     access_token = create_access_token(identity=identity)
     return {"access_token": access_token}
+
+
+@auth_bp.post('/register')
+def register():
+    try:
+        request_json = request.get_json()
+        user = user_schema.load(request_json)
+
+        if wanted_type := request_json.get('account_type', None) is not None:
+            # TODO: create account type change request
+            pass
+
+        user.account_type = AccountType.query.filter_by(name="TOURIST").first_or_404(description="Role does not exist.")
+        User.query.session.add(user)
+        User.query.session.commit()
+
+        return {"msg": "Successfully registered."}
+
+    except marshmallow.ValidationError as err:
+        return err.messages, 400
+
+    except sqlalchemy.exc.SQLAlchemyError as err:
+        return {"msg": err}, 400

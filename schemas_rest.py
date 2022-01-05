@@ -1,7 +1,7 @@
-from datetime import datetime, date
+from datetime import date
 
 from flask import request
-from flask_marshmallow import fields
+from marshmallow_sqlalchemy import fields
 from markupsafe import escape
 from marshmallow import validate, validates, pre_load, post_load
 
@@ -35,13 +35,13 @@ class UserSchema(ma.SQLAlchemyAutoSchema):
     password = ma.auto_field(load_only=True, validate=[
         validate.Length(min=8, max=256, error="Invalid password length."),
     ])
-    account_type = ma.auto_field(dump_only=True)
+    account_type = ma.auto_field()
 
     def get_user_from_jwt_claims(self, data):
         self.id = data["id"]
         self.username = data["username"]
         self.email = data["email"]
-        account_type = AccountType.query.filter_by(id=data["account_type"][0])\
+        account_type = AccountType.query.filter_by(id=data["account_type"][0]) \
             .first_or_404(description='Invalid account type')
         self.account_type = account_type
 
@@ -128,6 +128,13 @@ basic_arrangement_schema = BasicArrangementSchema()
 basic_arrangements_schema = BasicArrangementSchema(many=True)
 
 
+class GuideArrangementSchema(UserSchema):
+    guiding_tours = fields.fields.List(fields.Nested(ArrangementSchema))
+
+
+guide_arrangement_schema = GuideArrangementSchema()
+
+
 class ReservationSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Reservation
@@ -141,6 +148,13 @@ class ReservationSchema(ma.SQLAlchemyAutoSchema):
 
 reservation_schema = ReservationSchema()
 reservations_schema = ReservationSchema(many=True)
+
+
+class TouristReservationSchema(UserSchema):
+    reservations = fields.fields.List(fields.Nested(ReservationSchema))
+
+
+tourist_reservation_schema = TouristReservationSchema()
 
 
 class AccountTypeChangeRequestSchema(ma.SQLAlchemyAutoSchema):

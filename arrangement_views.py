@@ -5,7 +5,7 @@ from flask import Blueprint, request, current_app, jsonify
 from flask_jwt_extended import jwt_required, verify_jwt_in_request
 from sqlalchemy import select
 
-from auth import get_current_user_custom, roles_required
+from auth_views import get_current_user_custom, roles_required
 from models import Arrangement, User
 from models import db
 from schemas_rest import basic_arrangements_schema, arrangement_schema, arrangements_schema
@@ -144,12 +144,12 @@ def update_arrangement(arrangement_id):
 
             # if we're assigning a guide
             if request_arrangement.guide is not None:
-                guide = User.query.filter_by(id=request_arrangement.guide).first_or_404("There's no such guide.")
+                guide = User.query.filter_by(id=request_arrangement.guide).first_or_404(description="There's no such guide.")
                 if guide.account_type != "GUIDE":
                     return {"msg": "There's no such guide."}, 404
 
                 # if guide is free on that day we assign him
-                if guide.check_free(request_arrangement.start_date) and guide.check_free(request_arrangement.end_date):
+                if guide.is_free(request_arrangement.start_date) and guide.is_free(request_arrangement.end_date):
                     arrangement.update(request_arrangement)
                 else:
                     return {"msg": "Guide is not free on that day."}, 400
@@ -173,7 +173,7 @@ def update_arrangement(arrangement_id):
         try:
             description = request.get_json()["description"]
 
-            arrangement = Arrangement.query.filter_by(id=arrangement_id).first_or_404("No such arrangement found.")
+            arrangement = Arrangement.query.filter_by(id=arrangement_id).first_or_404(description="No such arrangement found.")
 
             if arrangement.guide != user.id:
                 return {"msg": "Forbidden method."}, 403
@@ -191,7 +191,7 @@ def update_arrangement(arrangement_id):
 @roles_required("ADMIN")
 def delete_arrangement(arrangement_id):
     user = get_current_user_custom()
-    arrangement = Arrangement.query.filter_by(id=arrangement_id, creator=user.id).first_or_404("There's no such arrangement.")
+    arrangement = Arrangement.query.filter_by(id=arrangement_id, creator=user.id).first_or_404(description="There's no such arrangement.")
 
     Arrangement.query.session.delete(arrangement)
     Arrangement.query.session.commit()

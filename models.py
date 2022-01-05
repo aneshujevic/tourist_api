@@ -43,20 +43,38 @@ class User(db.Model):
         self.last_name = other.last_name
         self.password = other.password
 
-    @hybrid_method
-    def check_free(self, date_needed):
-        if self.account_type.name == "GUIDE":
-            arrangements = db.session.execute(
-                select(Arrangement.id)
-                .where(
-                    and_(Arrangement.start_date <= date_needed, date_needed <= Arrangement.end_date)
-                )
-            ).first()
+    @hybrid_property
+    def reservations(self):
+        for acc_type in self.account_type:
+            if "TOURIST" in acc_type.name:
+                reservations = Reservation.query.filter_by(customer=self.id)
+                return reservations
+            raise TypeError("Not a tourist account")
 
-            if arrangements is None:
-                return True
-            return False
-        raise ValueError("Not a guide account.")
+    @hybrid_property
+    def guiding_tours(self):
+        for acc_type in self.account_type:
+            if "GUIDE" in acc_type.name:
+                arrangements = Arrangement.query.filter_by(guide=self.id).all()
+                return arrangements
+            raise TypeError("Not a guide account")
+
+    @hybrid_method
+    def is_free(self, date_needed):
+        for acc_type in self.account_type:
+            if "GUIDE" in acc_type.name:
+                # only one is needed for us to know that the guide is busy
+                arrangements = db.session.execute(
+                    select(Arrangement.id)
+                    .where(
+                        and_(Arrangement.start_date <= date_needed, date_needed <= Arrangement.end_date)
+                    )
+                ).first()
+
+                if arrangements is None:
+                    return True
+                return False
+            raise TypeError("Not a guide account.")
 
 
 class Arrangement(db.Model):
