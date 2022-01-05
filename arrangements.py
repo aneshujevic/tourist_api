@@ -1,20 +1,16 @@
 import datetime
 
-import flask
 import marshmallow
 from flask import Blueprint, request, current_app, jsonify
 from flask_jwt_extended import jwt_required, verify_jwt_in_request
-from sqlalchemy import select, and_
+from sqlalchemy import select
 
-# from auth import get_current_user_custom
-import app
-from auth import get_current_user_custom
-from models import Arrangement, User, AccountType
+from auth import get_current_user_custom, roles_required
+from models import Arrangement, User
 from models import db
-from schemas_rest import basic_arrangements_schema, arrangement_schema, user_schema, arrangements_schema
+from schemas_rest import basic_arrangements_schema, arrangement_schema, arrangements_schema
 
 arrangements_bp = Blueprint('arrangements', __name__, url_prefix='/arrangements')
-users_bp = Blueprint('users', __name__, url_prefix='/users')
 
 
 @arrangements_bp.get('/page/<int:page>')
@@ -95,13 +91,29 @@ def get_all_arrangements(page=1):
 
 
 @arrangements_bp.get('/<int:arrangement_id>')
+@jwt_required()
 def get_arrangement(arrangement_id):
     arrangement = Arrangement.query.filter_by(id=arrangement_id).first_or_404(description='No such arrangement found.')
     return arrangement_schema.dump(arrangement)
 
 
+@arrangements_bp.get('/own')
+@jwt_required()
+@roles_required("ADMIN", "GUIDE")
+def get_own_arrangements():
+    user = get_current_user_custom()
+
+    if user.account_type.name == "ADMIN":
+        arrangements = Arrangement.query.filter_by(creator=user.id).all()
+    else:
+        arrangements = Arrangement.query.filter_by(guide=user.id).all()
+
+    return jsonify(arrangements_schema.dump(arrangements))
+
+
 @arrangements_bp.post('/')
 @jwt_required()
+@roles_required("ADMIN")
 def create_arrangement():
     try:
         arrangement = arrangement_schema.load(request.get_json())
@@ -118,6 +130,7 @@ def create_arrangement():
 
 @arrangements_bp.put('/<int:arrangement_id>')
 @jwt_required()
+@roles_required("ADMIN", "GUIDE")
 def update_arrangement(arrangement_id):
     user = get_current_user_custom()
     arrangement = Arrangement.query.filter_by(id=arrangement_id).first_or_404(description='No such arrangement found.')
@@ -132,7 +145,7 @@ def update_arrangement(arrangement_id):
             # if we're assigning a guide
             if request_arrangement.guide is not None:
                 guide = User.query.filter_by(id=request_arrangement.guide).first_or_404("There's no such guide.")
-                if guide.account_type is not "GUIDE":
+                if guide.account_type != "GUIDE":
                     return {"msg": "There's no such guide."}, 404
 
                 # if guide is free on that day we assign him
@@ -171,4 +184,17 @@ def update_arrangement(arrangement_id):
 
         except KeyError:
             return {"msg": "Malformed request."}, 400
+
+
+@arrangements_bp.delete('/<int:arrangement_id>')
+@jwt_required()
+@roles_required("ADMIN")
+def delete_arrangement(arrangement_id):
+    user = get_current_user_custom()
+    arrangement = Arrangement.query.filter_by(id=arrangement_id, creator=user.id).first_or_404("There's no such arrangement.")
+
+    Arrangement.query.session.delete(arrangement)
+    Arrangement.query.session.commit()
+
+    return {"msg": "Successfully deleted an arrangement."}
 

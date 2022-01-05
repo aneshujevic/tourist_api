@@ -1,7 +1,7 @@
 from flask import Flask
 
+import arrangements
 import auth
-import views
 from config import BaseConfig
 from extensions import ma, db, jwt_man, mi
 
@@ -23,4 +23,4 @@ def register_extensions(app):
 
 def register_blueprints(app):
     app.register_blueprint(auth.auth_bp)
-    app.register_blueprint(views.arrangements_bp)
+    app.register_blueprint(arrangements.arrangements_bp)

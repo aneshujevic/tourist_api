@@ -17,7 +17,7 @@ def roles_required(*required_roles):
         def decorator(*args, **kwargs):
             verify_jwt_in_request()
             user = get_current_user_custom()
-            if user.account_type in required_roles:
+            if user.account_type.name in required_roles:
                 return fn(*args, **kwargs)
             else:
                 return {"msg": "Forbidden method."}, 403

@@ -78,6 +78,7 @@ class ArrangementSchema(ma.SQLAlchemyAutoSchema):
     destination = ma.auto_field(validate=[
         validate.Length(min=5, error='Destination too short, try adding some more comments.')
     ])
+    seats_available = fields.fields.Integer()
 
     @validates('start_date')
     def validate_start_date_order(self, value):
