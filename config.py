@@ -4,7 +4,8 @@ from datetime import timedelta
 class BaseConfig(object):
     SECRET_KEY = 'change me'
     SQLALCHEMY_DATABASE_URI = 'postgresql://postgres_secret_user:postgres_secret_passwd@localhost:5432/tourist_api_db'
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_TRACK_MODIFICATIONS = True
+    SQLALCHEMY_RECORD_QUERIES = True
 
     # JWT config
     JWT_SECRET_KEY = 'SUPER-SUPER-SECRET-KEY'

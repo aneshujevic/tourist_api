@@ -69,9 +69,9 @@ class ArrangementSchema(ma.SQLAlchemyAutoSchema):
         load_instance = True
 
     id = ma.auto_field(dump_only=True)
-    creator = ma.auto_field(dump_only=True)
+    creator_id = ma.auto_field(dump_only=True)
     start_date = ma.auto_field()
-    guide = ma.auto_field()
+    guide_id = ma.auto_field()
     description = ma.auto_field(validate=[
         validate.Length(min=5, error='Description too short, try adding some more comments.')
     ])
@@ -140,6 +140,10 @@ class ReservationSchema(ma.SQLAlchemyAutoSchema):
         model = Reservation
         load_instance = True
 
+    customer_id = ma.auto_field(dump_only=True)
+    arrangement_id = ma.auto_field(required=True)
+    reservation_price = fields.fields.Float()
+
     @validates('seats_needed')
     def validate_seats_needed(self, value):
         if value <= 0:
@@ -148,6 +152,13 @@ class ReservationSchema(ma.SQLAlchemyAutoSchema):
 
 reservation_schema = ReservationSchema()
 reservations_schema = ReservationSchema(many=True)
+
+
+class CompletedReservationSchema(ReservationSchema):
+    customer_details = fields.Nested(UserSchema, dump_only=True)
+
+
+completed_reservation_schema = CompletedReservationSchema()
 
 
 class TouristReservationSchema(UserSchema):
@@ -163,10 +174,10 @@ class AccountTypeChangeRequestSchema(ma.SQLAlchemyAutoSchema):
         load_instance = True
 
     id = ma.auto_field(dump_only=True)
-    user = ma.auto_field(dump_only=True)
+    user_id = ma.auto_field(dump_only=True)
     filing_date = ma.auto_field(dump_only=True)
     confirmation_date = ma.auto_field(dump_only=True)
-    admin_confirmed = ma.auto_field(dump_only=True)
+    admin_confirmed_id = ma.auto_field(dump_only=True)
 
     @pre_load
     def process_input(self, data, **kwargs):

@@ -118,7 +118,7 @@ def create_arrangement():
     try:
         arrangement = arrangement_schema.load(request.get_json())
         user = get_current_user_custom()
-        arrangement.creator = user.id
+        arrangement.creator_id = user.id
         Arrangement.query.session.add(arrangement)
         Arrangement.query.session.commit()
 
@@ -138,13 +138,13 @@ def update_arrangement(arrangement_id):
     if arrangement.start_date - datetime.date.today() <= datetime.timedelta(days=5):
         return {"msg": "Too late, arrangement editing time has passed."}, 403
 
-    if user.account_type.name == "ADMIN" and arrangement.creator == user.id:
+    if user.account_type.name == "ADMIN" and arrangement.creator_id == user.id:
         try:
             request_arrangement = arrangement_schema.load(request.get_json())
 
             # if we're assigning a guide
-            if request_arrangement.guide is not None:
-                guide = User.query.filter_by(id=request_arrangement.guide).first_or_404(description="There's no such guide.")
+            if request_arrangement.guide_id is not None:
+                guide = User.query.filter_by(id=request_arrangement.guide_id).first_or_404(description="There's no such guide.")
                 if guide.account_type != "GUIDE":
                     return {"msg": "There's no such guide."}, 404
 
@@ -175,7 +175,7 @@ def update_arrangement(arrangement_id):
 
             arrangement = Arrangement.query.filter_by(id=arrangement_id).first_or_404(description="No such arrangement found.")
 
-            if arrangement.guide != user.id:
+            if arrangement.guide_id != user.id:
                 return {"msg": "Forbidden method."}, 403
 
             arrangement.description = description

@@ -85,10 +85,10 @@ class Arrangement(db.Model):
     destination = db.Column(db.Text, nullable=False)
     cancelled = db.Column(db.Boolean, default=False)
     number_of_seats = db.Column(db.Integer, nullable=False)
-    price = db.Column(db.Integer, nullable=False)
-    guide = db.Column(db.ForeignKey('user.id'), nullable=True)
-    creator = db.Column(db.ForeignKey('user.id'), nullable=False)
-    reservations = db.relationship('Reservation', backref='arrangement_id')
+    price = db.Column(db.Float, nullable=False)
+    guide_id = db.Column(db.ForeignKey('user.id'), nullable=True)
+    creator_id = db.Column(db.ForeignKey('user.id'), nullable=False)
+    reservations = db.relationship('Reservation', backref='arrangements_id')
 
     __table_args__ = (CheckConstraint(start_date < end_date, name='check_dates_correct'),
                       CheckConstraint(price > 0, name='check_price_positive'),
@@ -106,36 +106,48 @@ class Arrangement(db.Model):
             self.destination = other.destination
             self.number_of_seats = other.number_of_seats
             self.price = other.price
-            self.guide = other.guide
+            self.guide_id = other.guide_id
             self.cancelled = other.cancelled
         else:
             raise marshmallow.ValidationError(message='Arrangement is cancelled, therefore it cannot be changed.')
 
 
 class Reservation(db.Model):
-    customer = db.Column(db.ForeignKey('user.id'), nullable=False, primary_key=True)
-    arrangement = db.Column(db.ForeignKey('arrangement.id'), nullable=False, primary_key=True)
-    seats_needed = db.Column(db.Integer, nullable=False, default=1)
+    seats_needed = db.Column(db.Integer, nullable=False)
+    customer_id = db.Column(db.ForeignKey('user.id'), nullable=False, primary_key=True)
+    arrangement_id = db.Column(db.ForeignKey('arrangement.id'), nullable=False, primary_key=True)
 
     __table_args__ = (CheckConstraint(seats_needed >= 0, name='check_seats_positive'),)
 
     @hybrid_property
-    def price(self):
-        return self.seats_needed * self.arrangement.price if self.seats_needed < 3 \
-            else 3 * self.arrangement.price + 0.9 * (self.seats_needed - 3)
+    def reservation_price(self):
+        arrangement = Arrangement.query.filter_by(id=self.arrangement_id).first()
+
+        if self.seats_needed < 3:
+            result = self.seats_needed * arrangement.price
+        else:
+            result = 3 * arrangement.price + 0.9 * (self.seats_needed - 3)
+
+        return result
+
+    @hybrid_property
+    def customer_details(self):
+        user = User.query.filter_by(id=self.customer_id).first()
+
+        return user
 
 
 class AccountTypeChangeRequest(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user = db.Column(db.ForeignKey('user.id'), nullable=False)
-    wanted_type = db.Column(db.ForeignKey('account_type.id'), nullable=False)
+    user_id = db.Column(db.ForeignKey('user.id'), nullable=False)
+    wanted_type_id = db.Column(db.ForeignKey('account_type.id'), nullable=False)
     granted = db.Column(db.Boolean, nullable=True)
     filing_date = db.Column(db.DateTime, nullable=False)
     confirmation_date = db.Column(db.DateTime, nullable=True)
-    admin_confirmed = db.Column(db.ForeignKey('user.id'), nullable=True)
+    admin_confirmed_id = db.Column(db.ForeignKey('user.id'), nullable=True)
     comment = db.Column(db.Text, nullable=False)
 
     def update(self, other):
         self.confirmation_date = other.confirmation_date
-        self.admin_confirmed = other.admin_confirmed
+        self.admin_confirmed_id = other.admin_confirmed_id
         self.comment = other.comment

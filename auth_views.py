@@ -1,3 +1,4 @@
+from datetime import timedelta
 from functools import wraps
 
 import flask_jwt_extended
@@ -68,7 +69,7 @@ def login():
 @jwt_required(refresh=True)
 def refresh():
     identity = get_jwt_identity()
-    access_token = create_access_token(identity=identity)
+    access_token = create_access_token(identity=identity, expires_delta=timedelta(hours=3))
     return {"access_token": access_token}
 
 
