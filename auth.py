@@ -17,7 +17,7 @@ def roles_required(*required_roles):
         def decorator(*args, **kwargs):
             verify_jwt_in_request()
             user = get_current_user_custom()
-            if user.user_type in required_roles:
+            if user.account_type in required_roles:
                 return fn(*args, **kwargs)
             else:
                 return {"msg": "Forbidden method."}, 403
@@ -56,8 +56,9 @@ def login():
     if user.password != password:
         return {"message": "Wrong login credentials."}, 403
 
-    access_token = create_access_token(identity=user_schema.dump(user))
-    refresh_token = create_refresh_token(identity=user_schema.dump(user))
+    user = user_schema.dump(user)
+    access_token = create_access_token(identity=user)
+    refresh_token = create_refresh_token(identity=user)
     return {"access_token": access_token, "refresh_token": refresh_token}
 
 

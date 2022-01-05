@@ -1,21 +1,26 @@
 from flask import Flask
-from flask_marshmallow import Marshmallow
-from flask_migrate import Migrate
-from flask_sqlalchemy import SQLAlchemy
 
-from auth import auth_bp
+import auth
+import views
 from config import BaseConfig
+from extensions import ma, db, jwt_man, mi
 
-app = Flask(__name__)
-app.config.from_object(BaseConfig)
-app.register_blueprint(auth_bp)
 
-db = SQLAlchemy(app)
-ma = Marshmallow(app)
+def create_app(config_object=BaseConfig()):
+    app = Flask(__name__)
+    app.config.from_object(config_object)
+    register_extensions(app)
+    register_blueprints(app)
+    return app
 
-from models import *
 
-migrate = Migrate(app, db)
+def register_extensions(app):
+    db.init_app(app)
+    ma.init_app(app)
+    mi.init_app(app, db)
+    jwt_man.init_app(app)
 
-if __name__ == '__main__':
-    app.run()
+
+def register_blueprints(app):
+    app.register_blueprint(auth.auth_bp)
+    app.register_blueprint(views.arrangements_bp)

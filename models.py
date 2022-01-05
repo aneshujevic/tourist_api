@@ -1,22 +1,30 @@
-from sqlalchemy import CheckConstraint
-from sqlalchemy.ext.hybrid import hybrid_property
+import marshmallow
+from sqlalchemy import CheckConstraint, select, and_
+from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
 
-from app import db
+from extensions import db
 
 user_type_table = db.Table('user_type', db.metadata,
                            db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
-                           db.Column('account_type_id', db.String(64), db.ForeignKey('account_type.id'), primary_key=True)
+                           db.Column('account_type_id', db.Integer, db.ForeignKey('account_type.id'), primary_key=True)
                            )
 
 
 class AccountType(db.Model):
-    name = db.Column(db.String(64), primary_key=True, nullable=False)
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64), nullable=False)
     users = db.relationship(
         'User',
         secondary=user_type_table,
         back_populates='account_type',
         lazy='select'
     )
+
+    def __repr__(self):
+        return self.name
+
+    def __str__(self):
+        return self.name
 
 
 class User(db.Model):
@@ -26,7 +34,29 @@ class User(db.Model):
     first_name = db.Column(db.String(32), nullable=False)
     last_name = db.Column(db.String(32), nullable=False)
     password = db.Column(db.String(256), nullable=False)
-    account_type = db.relationship('account_type', secondary=user_type_table, back_populates='users', lazy='select')
+    account_type = db.relationship('AccountType', secondary=user_type_table, back_populates='users', lazy='select')
+
+    def update(self, other):
+        self.email = other.email
+        self.username = other.username
+        self.first_name = other.first_name
+        self.last_name = other.last_name
+        self.password = other.password
+
+    @hybrid_method
+    def check_free(self, date_needed):
+        if self.account_type.name == "GUIDE":
+            arrangements = db.session.execute(
+                select(Arrangement.id)
+                .where(
+                    and_(Arrangement.start_date <= date_needed, date_needed <= Arrangement.end_date)
+                )
+            ).first()
+
+            if arrangements is None:
+                return True
+            return False
+        raise ValueError("Not a guide account.")
 
 
 class Arrangement(db.Model):
@@ -35,11 +65,12 @@ class Arrangement(db.Model):
     end_date = db.Column(db.Date, nullable=False)
     description = db.Column(db.Text, nullable=False)
     destination = db.Column(db.Text, nullable=False)
+    cancelled = db.Column(db.Boolean, default=False)
     number_of_seats = db.Column(db.Integer, nullable=False)
     price = db.Column(db.Integer, nullable=False)
     guide = db.Column(db.ForeignKey('user.id'), nullable=True)
     creator = db.Column(db.ForeignKey('user.id'), nullable=False)
-    reservations = db.relationship('Reservation', backref='arrangement')
+    reservations = db.relationship('Reservation', backref='arrangement_id')
 
     __table_args__ = (CheckConstraint(start_date < end_date, name='check_dates_correct'),
                       CheckConstraint(price > 0, name='check_price_positive'),
@@ -48,6 +79,19 @@ class Arrangement(db.Model):
     @hybrid_property
     def seats_available(self):
         return self.number_of_seats - sum(reservation.seats_needed for reservation in self.reservations)
+
+    def update(self, other):
+        if not self.cancelled:
+            self.start_date = other.start_date
+            self.end_date = other.end_date
+            self.description = other.description
+            self.destination = other.destination
+            self.number_of_seats = other.number_of_seats
+            self.price = other.price
+            self.guide = other.guide
+            self.cancelled = other.cancelled
+        else:
+            raise marshmallow.ValidationError(message='Arrangement is cancelled, therefore it cannot be changed.')
 
 
 class Reservation(db.Model):
@@ -72,3 +116,8 @@ class AccountTypeChangeRequest(db.Model):
     confirmation_date = db.Column(db.DateTime, nullable=True)
     admin_confirmed = db.Column(db.ForeignKey('user.id'), nullable=True)
     comment = db.Column(db.Text, nullable=False)
+
+    def update(self, other):
+        self.confirmation_date = other.confirmation_date
+        self.admin_confirmed = other.admin_confirmed
+        self.comment = other.comment
