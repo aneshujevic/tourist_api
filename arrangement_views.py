@@ -46,31 +46,26 @@ def get_all_arrangements(page=1):
     # parse them from request and return the appropriate results
     req_start_date = request.args.get('start-date', None)
     req_end_date = request.args.get('end-date', None)
-
     if req_start_date and req_end_date:
         try:
             start_date = datetime.date.fromisoformat(req_start_date)
             end_date = datetime.date.fromisoformat(req_end_date)
 
-            raw_arrangements = db.session.execute(
-                select_statement
-                    .filter(Arrangement.start_date >= start_date, Arrangement.end_date <= end_date)
-                    .limit(results_per_page)
-                    .offset((page - 1) * results_per_page)
-            ).all()
-
-            return jsonify(schema.dump(raw_arrangements))
+            select_statement = select_statement.filter(Arrangement.start_date >= start_date,
+                                                       Arrangement.end_date <= end_date)
 
         except ValueError:
             return {"msg": "Invalid date format."}, 400
+
+    req_destination = request.args.get('dest', None)
+    if req_destination is not None:
+        select_statement = select_statement.filter(Arrangement.destination.like(f"%{req_destination}%"))
 
     # if there is no sorting parameter in the request
     # or the parameter provided doesn't exist
     # we return the arrangements paginated by start_date
     # otherwise we use the provided param
-
     req_sort_param = request.args.get('sort', None)
-
     if req_sort_param is None or sorts.get(req_sort_param, None) is None:
         raw_arrangements = db.session.execute(
             select_statement
@@ -144,7 +139,8 @@ def update_arrangement(arrangement_id):
 
             # if we're assigning a guide
             if request_arrangement.guide_id is not None:
-                guide = User.query.filter_by(id=request_arrangement.guide_id).first_or_404(description="There's no such guide.")
+                guide = User.query.filter_by(id=request_arrangement.guide_id).first_or_404(
+                    description="There's no such guide.")
                 if guide.account_type != "GUIDE":
                     return {"msg": "There's no such guide."}, 404
 
@@ -173,7 +169,8 @@ def update_arrangement(arrangement_id):
         try:
             description = request.get_json()["description"]
 
-            arrangement = Arrangement.query.filter_by(id=arrangement_id).first_or_404(description="No such arrangement found.")
+            arrangement = Arrangement.query.filter_by(id=arrangement_id).first_or_404(
+                description="No such arrangement found.")
 
             if arrangement.guide_id != user.id:
                 return {"msg": "Forbidden method."}, 403
@@ -191,10 +188,10 @@ def update_arrangement(arrangement_id):
 @roles_required("ADMIN")
 def delete_arrangement(arrangement_id):
     user = get_current_user_custom()
-    arrangement = Arrangement.query.filter_by(id=arrangement_id, creator=user.id).first_or_404(description="There's no such arrangement.")
+    arrangement = Arrangement.query.filter_by(id=arrangement_id, creator=user.id).first_or_404(
+        description="There's no such arrangement.")
 
     Arrangement.query.session.delete(arrangement)
     Arrangement.query.session.commit()
 
     return {"msg": "Successfully deleted an arrangement."}
-
