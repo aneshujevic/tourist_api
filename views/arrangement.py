@@ -3,14 +3,16 @@ import datetime
 import marshmallow
 from flask import request, current_app, jsonify
 from flask_jwt_extended import jwt_required, verify_jwt_in_request
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 from auth import get_current_user_custom, roles_required
+from config.extensions import db
 from utils.mail_service import send_arrangement_cancelled_notification
 from data.models import Arrangement, User, Reservation
 from data.models import db
 from data.schemas_rest import basic_arrangements_schema, arrangement_schema, arrangements_schema
-from views import arrangements_bp
+from views import arrangements_bp, reservation_bp
+from views.auth import roles_required, get_current_user_custom
 
 
 @arrangements_bp.get('/page/<int:page>')
@@ -212,3 +214,22 @@ def delete_arrangement(arrangement_id):
     Arrangement.query.session.commit()
 
     return {"msg": "Successfully deleted an arrangement."}
+
+
+@arrangements_bp.get('/available')
+@jwt_required()
+@roles_required("TOURIST")
+def get_available_arrangements():
+    current_user = get_current_user_custom()
+
+    with db.engine.connect() as connection:
+        query_text = text(
+            'SELECT * FROM arrangement '
+            'WHERE arrangement.start_date > CURRENT_DATE + 5 AND ('
+            'SELECT COUNT(*) FROM reservation '
+            'WHERE reservation.arrangement_id = arrangement.id AND reservation.customer_id = :curr_user_id'
+            ') = 0;')
+
+        available_arrangements = connection.execute(query_text, curr_user_id=current_user.id)
+
+        return jsonify([arrangement_schema.dump(arrangement) for arrangement in available_arrangements])

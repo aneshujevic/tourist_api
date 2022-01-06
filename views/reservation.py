@@ -4,13 +4,12 @@ import marshmallow
 import sqlalchemy.exc
 from flask import current_app, jsonify, request
 from flask_jwt_extended import jwt_required
-from sqlalchemy import text
 
 from auth import roles_required, get_current_user_custom
 from config.extensions import db
 from utils.mail_service import send_successful_reservation_notification, send_reservation_cancelled_notification
 from data.models import Reservation, Arrangement, User
-from data.schemas_rest import reservations_schema, reservation_schema, completed_reservation_schema, arrangement_schema
+from data.schemas_rest import reservations_schema, reservation_schema, completed_reservation_schema
 from views import reservation_bp
 
 
@@ -38,25 +37,6 @@ def get_own_reservations():
     reservations = Reservation.query.filter_by(customer_id=current_user.id).all()
 
     return jsonify(reservations_schema.dump(reservations))
-
-
-@reservation_bp.get('/available')
-@jwt_required()
-@roles_required("TOURIST")
-def get_available_arrangements():
-    current_user = get_current_user_custom()
-
-    with db.engine.connect() as connection:
-        query_text = text(
-            'SELECT * FROM arrangement '
-            'WHERE arrangement.start_date > CURRENT_DATE + 5 AND ('
-            'SELECT COUNT(*) FROM reservation '
-            'WHERE reservation.arrangement_id = arrangement.id AND reservation.customer_id = :curr_user_id'
-            ') = 0;')
-
-        available_reservations = connection.execute(query_text, curr_user_id=current_user.id)
-
-        return jsonify([arrangement_schema.dump(arrangement) for arrangement in available_reservations])
 
 
 @reservation_bp.post('')

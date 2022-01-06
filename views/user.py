@@ -282,7 +282,7 @@ def delete_own_user():
     return {"msg": "Profile successfully deleted."}
 
 
-@users_bp.get('/types')
+@types_bp.get('')
 @jwt_required()
 @roles_required("ADMIN")
 def get_all_types():
@@ -291,7 +291,7 @@ def get_all_types():
     return jsonify(types_schema.dump(acc_types))
 
 
-@users_bp.get('/types/<int:type_id>')
+@types_bp.get('/<int:type_id>')
 @jwt_required()
 @roles_required("ADMIN")
 def get_type(type_id):

@@ -66,8 +66,8 @@ def register_extensions(app):
 
 
 def register_blueprints(app):
-    # app.register_blueprint(views.auth_views.auth_bp)
+    app.register_blueprint(views.auth_bp)
     app.register_blueprint(views.arrangements_bp)
-    # app.register_blueprint(views.user_views.users_bp)
-    # app.register_blueprint(views.reservation_views.reservation_bp)
+    app.register_blueprint(views.users_bp)
+    app.register_blueprint(views.reservation_bp)
     app.register_blueprint(views.acc_type_change_bp)
