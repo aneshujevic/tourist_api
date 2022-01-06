@@ -1,9 +1,9 @@
 from datetime import date
 
+import marshmallow
 from flask import request
+from marshmallow import validate, validates, post_load
 from marshmallow_sqlalchemy import fields
-from markupsafe import escape
-from marshmallow import validate, validates, pre_load, post_load, pre_dump
 
 from extensions import ma
 from models import Reservation, AccountType, Arrangement, AccountTypeChangeRequest, User
@@ -33,9 +33,10 @@ class UserSchema(ma.SQLAlchemyAutoSchema):
                   validate.Length(min=5, max=64, error="Invalid length of email address.")]
     )
     password = ma.auto_field(load_only=True, validate=[
-        validate.Length(min=8, max=256, error="Invalid password length."),
+        validate.Length(min=8, error="Invalid password length."),
     ])
-    account_type = ma.auto_field()
+    password1 = fields.fields.String(required=True, load_only=True)
+    account_type = ma.auto_field(dump_only=True)
 
     def get_user_from_jwt_claims(self, data):
         self.id = data["id"]
@@ -47,15 +48,15 @@ class UserSchema(ma.SQLAlchemyAutoSchema):
 
         return self
 
-    @pre_load
-    def process_input(self, data, **kwargs):
-        data["username"] = escape(data["username"].strip())
-        data["first_name"] = escape(data["first_name"].strip())
-        data["last_name"] = escape(data["last_name"].strip())
-        return data
+    @validates('password1')
+    def validate_password_confirmation(self, value):
+        password = request.get_json()['password']
+        if password != value:
+            raise marshmallow.ValidationError("Passwords must be the same.")
 
     @post_load
     def make_user(self, data, **kwargs):
+        data.pop('password1')
         return User(**data)
 
 
@@ -182,7 +183,8 @@ class AccountTypeChangeRequestSchema(ma.SQLAlchemyAutoSchema):
     wanted_type_id = ma.auto_field(dump_only=True)
     account_type = fields.fields.String(dump_only=True)
     wanted_type = fields.fields.String(dump_only=True)
-    comment = ma.auto_field(required=True, validate=[validate.Length(min=5, max=1024, error="Invalid length of the comment.")])
+    comment = ma.auto_field(required=True,
+                            validate=[validate.Length(min=5, max=1024, error="Invalid length of the comment.")])
     granted = ma.auto_field(required=True)
 
 

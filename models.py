@@ -33,7 +33,7 @@ class User(db.Model):
     username = db.Column(db.String(32), unique=True, nullable=False)
     first_name = db.Column(db.String(32), nullable=False)
     last_name = db.Column(db.String(32), nullable=False)
-    password = db.Column(db.String(256), nullable=False)
+    password = db.Column(db.String(512), nullable=False)
     account_type = db.relationship('AccountType', secondary=user_type_table, back_populates='users', lazy='select')
 
     def update(self, other):

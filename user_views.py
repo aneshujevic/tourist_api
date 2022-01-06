@@ -1,14 +1,17 @@
 import marshmallow
+import sqlalchemy.exc
 from flask import Blueprint, current_app, request, jsonify
 from flask_jwt_extended import jwt_required
+from werkzeug.security import generate_password_hash
 
-from auth_views import roles_required, get_current_user_custom
+from auth_views import roles_required, get_current_user_custom, auth_bp
 from extensions import db
 from models import User, AccountType
 from schemas_rest import users_schema, type_schema, types_schema, user_schema, guide_arrangement_schema, \
     tourist_reservation_schema
 
 users_bp = Blueprint('users', __name__, url_prefix='/users')
+types_bp = Blueprint('types', __name__, url_prefix='/types')
 
 
 @users_bp.get('/page/<int:page>')
@@ -74,6 +77,33 @@ def get_user(user_id):
             return user_schema.dump(user)
 
 
+@auth_bp.post('/register')
+def register_user():
+    try:
+        wanted_type = None
+        if request.get_json().get('wanted_type'):
+            wanted_type = request.json.pop('wanted_type')
+
+        user = user_schema.load(request.get_json())
+
+        tourist_acc_type = AccountType.query.filter_by(name="TOURIST").first_or_404(description="Role does not exist.")
+        user.account_type.append(tourist_acc_type)
+        user.password = generate_password_hash(user.password, "pbkdf2:sha512:80000", 32)
+
+        User.query.session.add(user)
+        User.query.session.commit()
+
+        # TODO: implement account type change request
+
+        return {"msg": "Successfully registered."}
+
+    except marshmallow.ValidationError as err:
+        return err.messages, 400
+
+    except sqlalchemy.exc.SQLAlchemyError as err:
+        return {"msg": "Database operational error."}, 400
+
+
 @users_bp.put('/<int:user_id>')
 @jwt_required()
 @roles_required("ADMIN")
@@ -102,6 +132,15 @@ def delete_user(user_id):
     User.query.session.commit()
 
     return {"msg": "Successfully deleted a user."}
+
+
+@users_bp.get('/self')
+@jwt_required()
+def get_own_user():
+    req_user = get_current_user_custom()
+    user = User.query.filter_by(id=req_user.id).first()
+
+    return user_schema.dump(user)
 
 
 @users_bp.put('/self')
@@ -133,15 +172,6 @@ def delete_own_user():
     return {"msg": "Profile successfully deleted."}
 
 
-@users_bp.get('/self')
-@jwt_required()
-def get_own_user():
-    req_user = get_current_user_custom()
-    user = User.query.filter_by(id=req_user.id).first()
-
-    return user_schema.dump(user)
-
-
 @users_bp.get('/types')
 @jwt_required()
 @roles_required("ADMIN")
@@ -160,7 +190,7 @@ def get_type(type_id):
     return type_schema.dump(acc_type)
 
 
-@users_bp.post('/types')
+@types_bp.post('')
 @jwt_required()
 @roles_required("ADMIN")
 def create_type():
@@ -176,7 +206,7 @@ def create_type():
         return err.messages, 400
 
 
-@users_bp.delete('/types/<int:type_id>')
+@types_bp.delete('/<int:type_id>')
 @jwt_required()
 @roles_required("ADMIN")
 def delete_type(type_id):
@@ -188,7 +218,7 @@ def delete_type(type_id):
     return {"msg": "Successfully deleted a type."}
 
 
-@users_bp.put('/types/<int:type_id>')
+@types_bp.put('/<int:type_id>')
 @jwt_required()
 @roles_required("ADMIN")
 def update_type(type_id):
