@@ -8,7 +8,7 @@ from sqlalchemy import select
 from views.auth import roles_required, get_current_user_custom
 from config.extensions import db
 from utils.mail_service import send_account_change_request_notification
-from models import AccountTypeChangeRequest, AccountType, User
+from models.models import AccountTypeChangeRequest, AccountType, User
 from schemas.schemas_rest import account_type_change_requests_schema, account_type_change_request_schema, \
     base_account_type_change_request_schema
 

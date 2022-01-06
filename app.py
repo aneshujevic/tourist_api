@@ -7,7 +7,7 @@ from views import auth, account_change_request, reservation, user, arrangement
 
 from config.config import BaseConfig
 from config.extensions import ma, db, jwt_man, mi, mail
-from models import User, AccountType
+from models.models import User, AccountType
 
 
 def create_app(config_object=BaseConfig()):

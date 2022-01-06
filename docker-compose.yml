@@ -1,8 +1,8 @@
 services:
   db:
     container_name: tourist_db
-    volumes:
-      - /var/lib/postgresql:/var/lib/postgresql
+#    volumes:
+#      - /var/lib/postgresql:/var/lib/postgresql
     build:
       context: ./postgres-docker
       dockerfile: Dockerfile

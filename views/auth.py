@@ -7,7 +7,7 @@ from flask_jwt_extended import verify_jwt_in_request, create_access_token, creat
     get_jwt_identity
 from werkzeug.security import check_password_hash
 
-from models import User
+from models.models import User
 from schemas.schemas_rest import user_schema
 
 

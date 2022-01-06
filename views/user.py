@@ -12,7 +12,7 @@ from views.auth import roles_required, get_current_user_custom
 from views.auth import auth_bp
 from config.extensions import db
 from utils.mail_service import send_successful_registration, send_password_reset_email, send_password_changed_email
-from models import User, AccountType, AccountTypeChangeRequest, Arrangement
+from models.models import User, AccountType, AccountTypeChangeRequest, Arrangement
 from schemas.schemas_rest import users_schema, type_schema, types_schema, user_schema, guide_arrangement_schema, \
     tourist_reservation_schema
 

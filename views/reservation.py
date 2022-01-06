@@ -8,7 +8,7 @@ from flask_jwt_extended import jwt_required
 from views.auth import roles_required, get_current_user_custom
 from config.extensions import db
 from utils.mail_service import send_successful_reservation_notification, send_reservation_cancelled_notification
-from models import Reservation, Arrangement, User
+from models.models import Reservation, Arrangement, User
 from schemas.schemas_rest import reservations_schema, reservation_schema, completed_reservation_schema
 
 reservation_bp = Blueprint('reservations', __name__, url_prefix='/reservations')

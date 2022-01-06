@@ -6,8 +6,8 @@ from flask_jwt_extended import jwt_required, verify_jwt_in_request
 from sqlalchemy import select, text
 
 from utils.mail_service import send_arrangement_cancelled_notification
-from models import Arrangement, User, Reservation
-from models import db
+from models.models import Arrangement, User, Reservation
+from models.models import db
 from schemas.schemas_rest import basic_arrangements_schema, arrangement_schema, arrangements_schema
 from views.auth import roles_required, get_current_user_custom
 

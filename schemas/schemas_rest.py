@@ -6,7 +6,7 @@ from marshmallow import validate, validates, post_load
 from marshmallow_sqlalchemy import fields
 
 from config.extensions import ma
-from models import Reservation, AccountType, Arrangement, AccountTypeChangeRequest, User
+from models.models import Reservation, AccountType, Arrangement, AccountTypeChangeRequest, User
 
 
 class AccountTypeSchema(ma.SQLAlchemyAutoSchema):
