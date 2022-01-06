@@ -1,4 +1,8 @@
+from time import time
+
+import jwt
 import marshmallow
+from flask import current_app
 from sqlalchemy import CheckConstraint, select, and_
 from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
 
@@ -43,6 +47,12 @@ class User(db.Model):
         self.last_name = other.last_name
         self.password = other.password
 
+    def get_reset_token(self, expires=500):
+        return jwt.encode(
+            {'reset_password': self.username, 'exp': time() + expires},
+            key=current_app.config.get("JWT_SECRET_KEY")
+        )
+
     @hybrid_property
     def reservations(self):
         for acc_type in self.account_type:
@@ -66,7 +76,7 @@ class User(db.Model):
                 # only one is needed for us to know that the guide is busy
                 arrangements = db.session.execute(
                     select(Arrangement.id)
-                    .where(
+                        .where(
                         and_(Arrangement.start_date <= date_needed, date_needed <= Arrangement.end_date)
                     )
                 ).first()
@@ -151,7 +161,6 @@ class AccountTypeChangeRequest(db.Model):
     def wanted_type(self):
         acc_type = AccountType.query.filter_by(id=self.wanted_type_id).first()
         return acc_type.name
-
 
     def update(self, other):
         self.confirmation_date = other.confirmation_date

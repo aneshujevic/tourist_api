@@ -7,7 +7,6 @@ import reservation_views
 import user_views
 from config import BaseConfig
 from extensions import ma, db, jwt_man, mi, mail
-from mail_service import send_successful_registration
 
 
 def create_app(config_object=BaseConfig()):

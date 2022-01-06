@@ -1,5 +1,6 @@
 import datetime
 
+import jwt
 import marshmallow
 import sqlalchemy.exc
 from flask import Blueprint, current_app, request, jsonify
@@ -9,7 +10,7 @@ from werkzeug.security import generate_password_hash
 
 from auth_views import roles_required, get_current_user_custom, auth_bp
 from extensions import db
-from mail_service import send_successful_registration
+from mail_service import send_successful_registration, send_password_reset_email, send_password_changed_email
 from models import User, AccountType, AccountTypeChangeRequest, Arrangement
 from schemas_rest import users_schema, type_schema, types_schema, user_schema, guide_arrangement_schema, \
     tourist_reservation_schema
@@ -93,7 +94,11 @@ def register_user():
 
         tourist_acc_type = AccountType.query.filter_by(name="TOURIST").first_or_404(description="Role does not exist.")
         user.account_type.append(tourist_acc_type)
-        user.password = generate_password_hash(user.password, "pbkdf2:sha512:80000", 32)
+        user.password = generate_password_hash(
+            user.password,
+            current_app.config.get("PASSWORD_HASH_ALGORITHM"),
+            current_app.config.get("PASSWORD_SALT_LENGTH")
+        )
 
         User.query.session.add(user)
 
@@ -120,6 +125,59 @@ def register_user():
 
     except sqlalchemy.exc.SQLAlchemyError as err:
         return {"msg": "Database operational error."}, 400
+
+
+@auth_bp.post('/forgot-password')
+def get_reset_token():
+    try:
+        email = request.get_json().get('email', None)
+
+        if email is None:
+            return {"msg": "Malformed request."}, 400
+
+        user = User.query.filter_by(email=email).first_or_404(description="No such user found.")
+        token = user.get_reset_token()
+
+        send_password_reset_email(email, token)
+
+        return {"msg": "Email with further instructions has been sent to you."}
+
+    except KeyError:
+        return {"msg": "Malformed request."}, 400
+
+
+@auth_bp.post('/reset-password/<string:token>')
+def change_password(token):
+    try:
+        jwt_decoded = jwt.decode(token, algorithms="HS256", key=current_app.config.get("JWT_SECRET_KEY"))
+        username = jwt_decoded['reset_password']
+        password = request.get_json()['password']
+        password1 = request.get_json()['password1']
+
+        if len(password) < 8 or password != password1:
+            return {"msg": "Passwords must be the same"}, 400
+
+        user = User.query.filter_by(username=username) \
+            .first_or_404(description="No such user exists.")
+
+        user.password = generate_password_hash(
+            password,
+            current_app.config.get("PASSWORD_HASH_ALGORITHM"),
+            current_app.config.get("PASSWORD_SALT_LENGTH")
+        )
+
+        User.query.session.commit()
+
+        send_password_changed_email(user)
+
+        return {"msg": "Password updated successfully."}
+
+    except KeyError:
+        return {"msg": "Invalid request."}, 400
+
+    except jwt.DecodeError as decode_err:
+        print(decode_err)
+        return {"msg": "Invalid token."}, 400
 
 
 @users_bp.put('/<int:user_id>')
@@ -170,12 +228,12 @@ def get_free_guides():
         users = db.session.query(User) \
             .outerjoin(Arrangement, Arrangement.guide_id == User.id) \
             .where(
-                User.account_type.any(id=guide.id),
-                or_(
-                    and_(end_date <= Arrangement.start_date, start_date >= Arrangement.end_date),
-                    Arrangement.id == None,
-                )
-            ).all()
+            User.account_type.any(id=guide.id),
+            or_(
+                and_(end_date <= Arrangement.start_date, start_date >= Arrangement.end_date),
+                Arrangement.id == None,
+            )
+        ).all()
 
         return {"guides": users_schema.dump(users)}
 
@@ -192,9 +250,6 @@ def get_own_user():
     return user_schema.dump(user)
 
 
-# TODO: implement password recovery
-
-
 @users_bp.put('/self')
 @jwt_required()
 def update_own_user():
@@ -203,7 +258,11 @@ def update_own_user():
         current_user = User.query.filter_by(id=req_user.id).first()
 
         new_user = user_schema(request.get_json())
-        new_user.password = generate_password_hash(new_user.password, "pbkdf2:sha512:80000", 32)
+        new_user.password = generate_password_hash(
+            new_user.password,
+            current_app.config.get("PASSWORD_HASH_ALGORITHM"),
+            current_app.config.get("PASSWORD_SALT_LENGTH")
+        )
         current_user.update(new_user)
 
         User.query.session.commit()

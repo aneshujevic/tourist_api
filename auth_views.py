@@ -25,6 +25,7 @@ def roles_required(*required_roles):
                 return {"msg": "Forbidden method."}, 403
 
         return decorator
+
     return wrapper
 
 
@@ -34,7 +35,9 @@ def login_required():
         def decorator(*args, **kwargs):
             verify_jwt_in_request()
             return fn(*args, **kwargs)
+
         return decorator
+
     return wrapper
 
 

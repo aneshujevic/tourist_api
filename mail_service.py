@@ -1,3 +1,5 @@
+import time
+
 from flask import current_app
 from flask_mail import Message
 
@@ -71,6 +73,34 @@ def send_arrangement_cancelled_notification(user, arrangement):
                        f"\n\nWe are sorry to inform you that the arrangement with id {arrangement.id} has been canceled."
                        f"\nHence your reservation is also cancelled."
                        f"\n\nWe are sorry for the inconvenience!"
+                       f"\n\nBest of luck!"
+                       f"\nAdmin team"
+                  )
+    mail.send(msg)
+
+
+def send_password_reset_email(email, token):
+    msg = Message(subject=f"Password reset",
+                  sender=current_app.config.get("MAIL_USERNAME"),
+                  recipients=[email],
+                  body=f"Greetings,"
+                       f"\n\nYou have requested a password reset."
+                       f"\nYou should send a JSON request with password and password1 strings via POST method on "
+                       f"{current_app.config.get('CURRENT_DOMAIN')}/auth/reset-password/{token}"
+                       f"\n\nWe are sorry for the inconvenience!"
+                       f"\n\nBest of luck!"
+                       f"\nAdmin team"
+                  )
+    mail.send(msg)
+
+
+def send_password_changed_email(user):
+    msg = Message(subject="Password changed notification",
+                  sender=current_app.config.get("MAIL_USERNAME"),
+                  recipients=[user.email],
+                  body=f"Greetings {user.username},"
+                       f"\n\nYour password has been successfully changed."
+                       f"\nTimestamp:{time.time()}"
                        f"\n\nBest of luck!"
                        f"\nAdmin team"
                   )

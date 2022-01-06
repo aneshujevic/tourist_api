@@ -10,8 +10,7 @@ from auth_views import roles_required, get_current_user_custom
 from extensions import db
 from mail_service import send_successful_reservation_notification, send_reservation_cancelled_notification
 from models import Reservation, Arrangement, User
-from schemas_rest import reservations_schema, reservation_schema, completed_reservation_schema, arrangements_schema, \
-    arrangement_schema
+from schemas_rest import reservations_schema, reservation_schema, completed_reservation_schema, arrangement_schema
 
 reservation_bp = Blueprint('reservations', __name__, url_prefix='/reservations')
 
@@ -111,10 +110,10 @@ def create_reservation():
 def delete_reservation(arrangement_id):
     user = get_current_user_custom()
     if user.account_type.name == "TOURIST":
-        reservation = Reservation.query.filter_by(arrangement_id=arrangement_id, customer_id=user.id)\
+        reservation = Reservation.query.filter_by(arrangement_id=arrangement_id, customer_id=user.id) \
             .first_or_404(description="No such reservation found.")
     else:
-        reservation = Reservation.query.filter_by(arrangement_id=arrangement_id)\
+        reservation = Reservation.query.filter_by(arrangement_id=arrangement_id) \
             .first_or_404(description="No such reservation found.")
 
     Reservation.query.session.delete(reservation)
@@ -123,7 +122,7 @@ def delete_reservation(arrangement_id):
     if user.account_type.name == "TOURIST":
         send_reservation_cancelled_notification(user, reservation)
     else:
-        tourist = User.query.filter_by(id=reservation.customer_id)\
+        tourist = User.query.filter_by(id=reservation.customer_id) \
             .first_or_404(description="No such tourist found.")
         send_reservation_cancelled_notification(tourist, reservation)
 

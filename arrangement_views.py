@@ -198,12 +198,12 @@ def update_arrangement(arrangement_id):
 @roles_required("ADMIN")
 def delete_arrangement(arrangement_id):
     user = get_current_user_custom()
-    arrangement = Arrangement.query.filter_by(id=arrangement_id, creator_id=user.id)\
+    arrangement = Arrangement.query.filter_by(id=arrangement_id, creator_id=user.id) \
         .first_or_404(description="There's no such arrangement.")
 
-    users = db.session.query(User)\
-        .join(Reservation, User.id == Reservation.customer_id)\
-        .where(Reservation.arrangement_id == arrangement.id)\
+    users = db.session.query(User) \
+        .join(Reservation, User.id == Reservation.customer_id) \
+        .where(Reservation.arrangement_id == arrangement.id) \
         .all()
 
     for user in users:

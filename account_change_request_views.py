@@ -116,7 +116,7 @@ def verify_type_change_request(request_id):
     try:
         admin = get_current_user_custom()
 
-        change_request = AccountTypeChangeRequest.query.filter_by(id=request_id)\
+        change_request = AccountTypeChangeRequest.query.filter_by(id=request_id) \
             .first_or_404(description="There is no such account type change request.")
 
         req_change_request = account_type_change_request_schema.load(request.get_json())
