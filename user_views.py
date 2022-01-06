@@ -1,3 +1,5 @@
+import datetime
+
 import marshmallow
 import sqlalchemy.exc
 from flask import Blueprint, current_app, request, jsonify
@@ -6,7 +8,7 @@ from werkzeug.security import generate_password_hash
 
 from auth_views import roles_required, get_current_user_custom, auth_bp
 from extensions import db
-from models import User, AccountType
+from models import User, AccountType, AccountTypeChangeRequest
 from schemas_rest import users_schema, type_schema, types_schema, user_schema, guide_arrangement_schema, \
     tourist_reservation_schema
 
@@ -91,9 +93,20 @@ def register_user():
         user.password = generate_password_hash(user.password, "pbkdf2:sha512:80000", 32)
 
         User.query.session.add(user)
-        User.query.session.commit()
 
-        # TODO: implement account type change request
+        if wanted_type is not None:
+            acc_type = AccountType.query.filter_by(name=wanted_type) \
+                .first_or_404(description="No such account type found.")
+
+            change_request = AccountTypeChangeRequest(
+                user_id=user.id,
+                filing_date=datetime.datetime.now(),
+                wanted_type_id=acc_type.id
+            )
+
+            AccountTypeChangeRequest.query.session.add(change_request)
+
+        User.query.session.commit()
 
         return {"msg": "Successfully registered."}
 
