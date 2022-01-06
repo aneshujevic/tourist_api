@@ -3,18 +3,20 @@ import datetime
 import jwt
 import marshmallow
 import sqlalchemy.exc
-from flask import current_app, request, jsonify
+from flask import current_app, request, jsonify, Blueprint
 from flask_jwt_extended import jwt_required
 from sqlalchemy import or_, and_
 from werkzeug.security import generate_password_hash
 
-from auth import roles_required, get_current_user_custom
-from views import auth_bp, users_bp, types_bp
+from views.auth import roles_required, get_current_user_custom
+from views.auth import auth_bp
 from config.extensions import db
 from utils.mail_service import send_successful_registration, send_password_reset_email, send_password_changed_email
-from data.models import User, AccountType, AccountTypeChangeRequest, Arrangement
-from data.schemas_rest import users_schema, type_schema, types_schema, user_schema, guide_arrangement_schema, \
+from models import User, AccountType, AccountTypeChangeRequest, Arrangement
+from schemas.schemas_rest import users_schema, type_schema, types_schema, user_schema, guide_arrangement_schema, \
     tourist_reservation_schema
+
+users_bp = Blueprint('users', __name__, url_prefix='/users')
 
 
 @users_bp.get('/page/<int:page>')
@@ -280,6 +282,9 @@ def delete_own_user():
     User.query.session.commit()
 
     return {"msg": "Profile successfully deleted."}
+
+
+types_bp = Blueprint('types', __name__, url_prefix='/types')
 
 
 @types_bp.get('')

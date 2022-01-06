@@ -3,11 +3,11 @@ from flask import Flask, current_app
 from flask.cli import with_appcontext
 from werkzeug.security import generate_password_hash
 
-import views
+from views import auth, account_change_request, reservation, user, arrangement
 
 from config.config import BaseConfig
 from config.extensions import ma, db, jwt_man, mi, mail
-from data.models import User, AccountType
+from models import User, AccountType
 
 
 def create_app(config_object=BaseConfig()):
@@ -66,8 +66,9 @@ def register_extensions(app):
 
 
 def register_blueprints(app):
-    app.register_blueprint(views.auth_bp)
-    app.register_blueprint(views.arrangements_bp)
-    app.register_blueprint(views.users_bp)
-    app.register_blueprint(views.reservation_bp)
-    app.register_blueprint(views.acc_type_change_bp)
+    app.register_blueprint(auth.auth_bp)
+    app.register_blueprint(arrangement.arrangements_bp)
+    app.register_blueprint(user.users_bp)
+    app.register_blueprint(user.types_bp)
+    app.register_blueprint(reservation.reservation_bp)
+    app.register_blueprint(account_change_request.acc_type_change_bp)

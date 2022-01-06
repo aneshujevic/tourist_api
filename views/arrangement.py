@@ -1,18 +1,17 @@
 import datetime
 
 import marshmallow
-from flask import request, current_app, jsonify
+from flask import request, current_app, jsonify, Blueprint
 from flask_jwt_extended import jwt_required, verify_jwt_in_request
 from sqlalchemy import select, text
 
-from auth import get_current_user_custom, roles_required
-from config.extensions import db
 from utils.mail_service import send_arrangement_cancelled_notification
-from data.models import Arrangement, User, Reservation
-from data.models import db
-from data.schemas_rest import basic_arrangements_schema, arrangement_schema, arrangements_schema
-from views import arrangements_bp, reservation_bp
+from models import Arrangement, User, Reservation
+from models import db
+from schemas.schemas_rest import basic_arrangements_schema, arrangement_schema, arrangements_schema
 from views.auth import roles_required, get_current_user_custom
+
+arrangements_bp = Blueprint('arrangements', __name__, url_prefix='/arrangements')
 
 
 @arrangements_bp.get('/page/<int:page>')

@@ -2,14 +2,13 @@ from datetime import timedelta
 from functools import wraps
 
 import flask_jwt_extended
-from flask import request
+from flask import request, Blueprint
 from flask_jwt_extended import verify_jwt_in_request, create_access_token, create_refresh_token, jwt_required, \
     get_jwt_identity
 from werkzeug.security import check_password_hash
 
-from data.models import User
-from data.schemas_rest import user_schema
-from views import auth_bp
+from models import User
+from schemas.schemas_rest import user_schema
 
 
 def roles_required(*required_roles):
@@ -43,6 +42,9 @@ def login_required():
 def get_current_user_custom():
     jwt_user = flask_jwt_extended.get_jwt_identity()
     return user_schema.get_user_from_jwt_claims(jwt_user)
+
+
+auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
 
 @auth_bp.post('/login')
