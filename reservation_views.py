@@ -9,7 +9,7 @@ from sqlalchemy import text
 from auth_views import roles_required, get_current_user_custom
 from extensions import db
 from mail_service import send_successful_reservation_notification, send_reservation_cancelled_notification
-from models import Reservation, Arrangement
+from models import Reservation, Arrangement, User
 from schemas_rest import reservations_schema, reservation_schema, completed_reservation_schema, arrangements_schema, \
     arrangement_schema
 
@@ -19,12 +19,14 @@ reservation_bp = Blueprint('reservations', __name__, url_prefix='/reservations')
 @reservation_bp.get('/page/<int:page_id>')
 @jwt_required()
 @roles_required("ADMIN")
-def get_all_reservations(page_id):
-    page = page_id - 1
+def get_all_reservations(page_id=1):
+    if page_id <= 0:
+        return {"msg", "Invalid page id."}, 400
+
     raw_reservations = db.session.execute(
         Reservation.query
             .limit(current_app.config['RESULTS_PER_PAGE'])
-            .offset((page - 1) * current_app.config['RESULTS_PER_PAGE'])
+            .offset((page_id - 1) * current_app.config['RESULTS_PER_PAGE'])
     ).all()
 
     return jsonify([reservations_schema.dump(reservation) for reservation in raw_reservations])
@@ -109,20 +111,21 @@ def create_reservation():
 def delete_reservation(arrangement_id):
     user = get_current_user_custom()
     if user.account_type.name == "TOURIST":
-        reservation = Reservation.query.filter_by(arrangement_id=arrangement_id, customer_id=user.id).first_or_404(
-            description="No such reservation found.")
+        reservation = Reservation.query.filter_by(arrangement_id=arrangement_id, customer_id=user.id)\
+            .first_or_404(description="No such reservation found.")
     else:
-        reservation = Reservation.query.filter_by(arrangement_id=arrangement_id).first_or_404(
-            description="No such reservation found.")
+        reservation = Reservation.query.filter_by(arrangement_id=arrangement_id)\
+            .first_or_404(description="No such reservation found.")
 
     Reservation.query.session.delete(reservation)
     Reservation.query.session.commit()
 
-    users = []
-
-    # TODO: implement email notification about cancellation of reservation
-    for user in users:
+    if user.account_type.name == "TOURIST":
         send_reservation_cancelled_notification(user, reservation)
+    else:
+        tourist = User.query.filter_by(id=reservation.customer_id)\
+            .first_or_404(description="No such tourist found.")
+        send_reservation_cancelled_notification(tourist, reservation)
 
     return {"msg": "Successfully canceled the reservation."}
 

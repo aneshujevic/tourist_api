@@ -4,12 +4,13 @@ import marshmallow
 import sqlalchemy.exc
 from flask import Blueprint, current_app, request, jsonify
 from flask_jwt_extended import jwt_required
+from sqlalchemy import or_, and_
 from werkzeug.security import generate_password_hash
 
 from auth_views import roles_required, get_current_user_custom, auth_bp
-from extensions import db, mail
+from extensions import db
 from mail_service import send_successful_registration
-from models import User, AccountType, AccountTypeChangeRequest
+from models import User, AccountType, AccountTypeChangeRequest, Arrangement
 from schemas_rest import users_schema, type_schema, types_schema, user_schema, guide_arrangement_schema, \
     tourist_reservation_schema
 
@@ -41,7 +42,8 @@ def get_all_users(page=1):
     req_sort_param = request.args.get('sort', None)
 
     if (requested_type := request.args.get('type', None)) and requested_type is not None:
-        requested_type_id = AccountType.query.filter_by(name=requested_type).first_or_404(description="No such role.").id
+        requested_type_id = AccountType.query.filter_by(name=requested_type).first_or_404(
+            description="No such role.").id
         select_statement = User.query.join(User.account_type).filter_by(id=requested_type_id)
     else:
         select_statement = User.query
@@ -154,8 +156,31 @@ def delete_user(user_id):
 @jwt_required()
 @roles_required("ADMIN")
 def get_free_guides():
-    # TODO: implement get free guides on certain date
-    pass
+    try:
+        guide = AccountType.query.filter_by(name="GUIDE").first()
+        req_start_date = request.args.get('start_date')
+        req_end_date = request.args.get('end_date')
+
+        start_date = datetime.date.fromisoformat(req_start_date)
+        end_date = datetime.date.fromisoformat(req_end_date)
+
+        if end_date < start_date:
+            return {"msg": "Malformed dates."}, 400
+
+        users = db.session.query(User) \
+            .outerjoin(Arrangement, Arrangement.guide_id == User.id) \
+            .where(
+                User.account_type.any(id=guide.id),
+                or_(
+                    and_(end_date <= Arrangement.start_date, start_date >= Arrangement.end_date),
+                    Arrangement.id == None,
+                )
+            ).all()
+
+        return {"guides": users_schema.dump(users)}
+
+    except KeyError:
+        return {"msg": "Start date and end date needed."}, 400
 
 
 @users_bp.get('/self')
@@ -177,8 +202,8 @@ def update_own_user():
         req_user = get_current_user_custom()
         current_user = User.query.filter_by(id=req_user.id).first()
 
-        # TODO: check double password
         new_user = user_schema(request.get_json())
+        new_user.password = generate_password_hash(new_user.password, "pbkdf2:sha512:80000", 32)
         current_user.update(new_user)
 
         User.query.session.commit()

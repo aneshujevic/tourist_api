@@ -21,7 +21,6 @@ acc_type_change_bp = Blueprint('account_change_request', __name__, url_prefix='/
 def get_all_type_change_requests(page_id):
     if page_id <= 0:
         return {"msg": "Invalid page number."}, 400
-    page = page_id - 1
 
     sorts = {
         "filing-date-a": AccountTypeChangeRequest.filing_date.asc(),
@@ -39,7 +38,7 @@ def get_all_type_change_requests(page_id):
         select(AccountTypeChangeRequest)
             .order_by(wanted_sort)
             .limit(current_app.config['RESULTS_PER_PAGE'])
-            .offset(page * current_app.config['RESULTS_PER_PAGE'])
+            .offset((page_id - 1) * current_app.config['RESULTS_PER_PAGE'])
     ).all()
 
     return jsonify([account_type_change_request_schema.dump(req[0]) for req in raw_requests])

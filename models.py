@@ -47,7 +47,7 @@ class User(db.Model):
     def reservations(self):
         for acc_type in self.account_type:
             if "TOURIST" in acc_type.name:
-                reservations = Reservation.query.filter_by(customer=self.id)
+                reservations = Reservation.query.filter_by(customer_id=self.id)
                 return reservations
             raise TypeError("Not a tourist account")
 
@@ -55,7 +55,7 @@ class User(db.Model):
     def guiding_tours(self):
         for acc_type in self.account_type:
             if "GUIDE" in acc_type.name:
-                arrangements = Arrangement.query.filter_by(guide=self.id).all()
+                arrangements = Arrangement.query.filter_by(guide_id=self.id).all()
                 return arrangements
             raise TypeError("Not a guide account")
 

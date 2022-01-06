@@ -6,7 +6,8 @@ from flask_jwt_extended import jwt_required, verify_jwt_in_request
 from sqlalchemy import select
 
 from auth_views import get_current_user_custom, roles_required
-from models import Arrangement, User
+from mail_service import send_arrangement_cancelled_notification
+from models import Arrangement, User, Reservation
 from models import db
 from schemas_rest import basic_arrangements_schema, arrangement_schema, arrangements_schema
 
@@ -50,6 +51,9 @@ def get_all_arrangements(page=1):
         try:
             start_date = datetime.date.fromisoformat(req_start_date)
             end_date = datetime.date.fromisoformat(req_end_date)
+
+            if end_date < start_date:
+                return {"msg": "Malformed dates."}, 400
 
             select_statement = select_statement.filter(Arrangement.start_date >= start_date,
                                                        Arrangement.end_date <= end_date)
@@ -99,9 +103,9 @@ def get_own_arrangements():
     user = get_current_user_custom()
 
     if user.account_type.name == "ADMIN":
-        arrangements = Arrangement.query.filter_by(creator=user.id).all()
+        arrangements = Arrangement.query.filter_by(creator_id=user.id).all()
     else:
-        arrangements = Arrangement.query.filter_by(guide=user.id).all()
+        arrangements = Arrangement.query.filter_by(guide_id=user.id).all()
 
     return jsonify(arrangements_schema.dump(arrangements))
 
@@ -129,6 +133,7 @@ def create_arrangement():
 def update_arrangement(arrangement_id):
     user = get_current_user_custom()
     arrangement = Arrangement.query.filter_by(id=arrangement_id).first_or_404(description='No such arrangement found.')
+    arrangement_was_cancelled = arrangement.cancelled
 
     if arrangement.start_date - datetime.date.today() <= datetime.timedelta(days=5):
         return {"msg": "Too late, arrangement editing time has passed."}, 403
@@ -154,9 +159,14 @@ def update_arrangement(arrangement_id):
                 arrangement.update(request_arrangement)
 
             # either way we check if we're actually canceling the arrangement
-            if request_arrangement.cancelled is True and arrangement.cancelled is False:
-                # TODO: notify all the users that the arrangement has been cancelled
-                pass
+            if request_arrangement.cancelled is True and arrangement_was_cancelled is False:
+                users = db.session.query(User) \
+                    .join(Reservation, User.id == Reservation.customer_id) \
+                    .where(Reservation.arrangement_id == arrangement.id) \
+                    .all()
+
+                for user in users:
+                    send_arrangement_cancelled_notification(user, arrangement)
 
             Arrangement.query.session.commit()
 
@@ -188,8 +198,16 @@ def update_arrangement(arrangement_id):
 @roles_required("ADMIN")
 def delete_arrangement(arrangement_id):
     user = get_current_user_custom()
-    arrangement = Arrangement.query.filter_by(id=arrangement_id, creator=user.id).first_or_404(
-        description="There's no such arrangement.")
+    arrangement = Arrangement.query.filter_by(id=arrangement_id, creator_id=user.id)\
+        .first_or_404(description="There's no such arrangement.")
+
+    users = db.session.query(User)\
+        .join(Reservation, User.id == Reservation.customer_id)\
+        .where(Reservation.arrangement_id == arrangement.id)\
+        .all()
+
+    for user in users:
+        send_arrangement_cancelled_notification(user, arrangement)
 
     Arrangement.query.session.delete(arrangement)
     Arrangement.query.session.commit()

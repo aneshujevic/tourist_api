@@ -55,11 +55,23 @@ def send_reservation_cancelled_notification(user, reservation):
                   sender=current_app.config.get("MAIL_USERNAME"),
                   recipients=[user.email],
                   body=f"Greetings {user.username}."
-                       f"\n\nWe are sorry to inform you that the arrangement with id {reservation.arrangement_id} has been canceled."
+                       f"\nWe are sorry to inform you that your reservation for arrangement {reservation.arrangement_id} has been cancelled. "
+                       f"\n\nSorry for the inconvenience!"
+                       f"\n\nBest of luck!"
+                       f"\nAdmin team"
+                  )
+    mail.send(msg)
+
+
+def send_arrangement_cancelled_notification(user, arrangement):
+    msg = Message(subject=f"Cancelling of the arrangement {arrangement.destination}",
+                  sender=current_app.config.get("MAIL_USERNAME"),
+                  recipients=[user.email],
+                  body=f"Greetings {user.username}."
+                       f"\n\nWe are sorry to inform you that the arrangement with id {arrangement.id} has been canceled."
                        f"\nHence your reservation is also cancelled."
                        f"\n\nWe are sorry for the inconvenience!"
                        f"\n\nBest of luck!"
                        f"\nAdmin team"
                   )
     mail.send(msg)
-
