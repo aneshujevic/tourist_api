@@ -1,0 +1,15 @@
+services:
+  db:
+    container_name: tourist_db
+    volumes:
+      - /var/lib/postgresql:/var/lib/postgresql
+    build:
+      context: ./postgres-docker
+      dockerfile: Dockerfile
+  web:
+    container_name: tourist_flask
+    build: .
+    depends_on:
+      - db
+    ports:
+      - "5000:5000"

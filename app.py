@@ -3,14 +3,11 @@ from flask import Flask, current_app
 from flask.cli import with_appcontext
 from werkzeug.security import generate_password_hash
 
-import account_change_request_views
-import arrangement_views
-import auth_views
-import reservation_views
-import user_views
-from config import BaseConfig
-from extensions import ma, db, jwt_man, mi, mail
-from models import User
+import views
+
+from config.config import BaseConfig
+from config.extensions import ma, db, jwt_man, mi, mail
+from data.models import User, AccountType
 
 
 def create_app(config_object=BaseConfig()):
@@ -19,14 +16,15 @@ def create_app(config_object=BaseConfig()):
     register_extensions(app)
     register_blueprints(app)
 
-    @app.cli.command("create-admin")
+    @app.cli.command("create-profile")
     @click.option("-u", "--username", "username")
     @click.option("-e", "--email", "email")
     @click.option("-f", "--first-name", "first_name")
     @click.option("-l", "--last-name", "last_name")
     @click.option("-p", "--password", "password")
+    @click.option("-t", "--account-type", "acc_type")
     @with_appcontext
-    def create_admin(username, email, first_name, last_name, password):
+    def create_profile(username, email, first_name, last_name, password, acc_type):
         admin = User(
             username=username,
             email=email,
@@ -38,9 +36,23 @@ def create_app(config_object=BaseConfig()):
                 current_app.config.get("PASSWORD_SALT_LENGTH")
             )
         )
+        acc_type = AccountType.query.filter_by(name=acc_type).first()
+        admin.account_type.append(acc_type)
+
         User.query.session.add(admin)
         User.query.session.commit()
+
         print("Successfully created an admin.")
+
+    @app.cli.command("create-type")
+    @click.argument("new_type")
+    def create_type(new_type):
+        new_type = AccountType(
+            name=new_type
+        )
+        AccountType.query.session.add(new_type)
+        AccountType.query.session.commit()
+        print(f"Successfully created type {new_type}")
 
     return app
 
@@ -54,8 +66,8 @@ def register_extensions(app):
 
 
 def register_blueprints(app):
-    app.register_blueprint(auth_views.auth_bp)
-    app.register_blueprint(arrangement_views.arrangements_bp)
-    app.register_blueprint(user_views.users_bp)
-    app.register_blueprint(reservation_views.reservation_bp)
-    app.register_blueprint(account_change_request_views.acc_type_change_bp)
+    # app.register_blueprint(views.auth_views.auth_bp)
+    app.register_blueprint(views.arrangements_bp)
+    # app.register_blueprint(views.user_views.users_bp)
+    # app.register_blueprint(views.reservation_views.reservation_bp)
+    app.register_blueprint(views.acc_type_change_bp)

@@ -3,7 +3,7 @@ import time
 from flask import current_app
 from flask_mail import Message
 
-from extensions import mail
+from config.extensions import mail
 
 
 def send_successful_registration(username, email, first_name, last_name):

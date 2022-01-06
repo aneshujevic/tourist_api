@@ -1,18 +1,17 @@
 import datetime
 
 import marshmallow
-from flask import Blueprint, jsonify, current_app, request
+from flask import jsonify, current_app, request
 from flask_jwt_extended import jwt_required
 from sqlalchemy import select
 
-from auth_views import roles_required, get_current_user_custom
-from extensions import db
-from mail_service import send_account_change_request_notification
-from models import AccountTypeChangeRequest, AccountType, User
-from schemas_rest import account_type_change_requests_schema, account_type_change_request_schema, \
+from views import acc_type_change_bp
+from views.auth import roles_required, get_current_user_custom
+from config.extensions import db
+from utils.mail_service import send_account_change_request_notification
+from data.models import AccountTypeChangeRequest, AccountType, User
+from data.schemas_rest import account_type_change_requests_schema, account_type_change_request_schema, \
     base_account_type_change_request_schema
-
-acc_type_change_bp = Blueprint('account_change_request', __name__, url_prefix='/acc-type-change')
 
 
 @acc_type_change_bp.get('/page/<int:page_id>')

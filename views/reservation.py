@@ -2,17 +2,16 @@ import datetime
 
 import marshmallow
 import sqlalchemy.exc
-from flask import Blueprint, current_app, jsonify, request
+from flask import current_app, jsonify, request
 from flask_jwt_extended import jwt_required
 from sqlalchemy import text
 
-from auth_views import roles_required, get_current_user_custom
-from extensions import db
-from mail_service import send_successful_reservation_notification, send_reservation_cancelled_notification
-from models import Reservation, Arrangement, User
-from schemas_rest import reservations_schema, reservation_schema, completed_reservation_schema, arrangement_schema
-
-reservation_bp = Blueprint('reservations', __name__, url_prefix='/reservations')
+from auth import roles_required, get_current_user_custom
+from config.extensions import db
+from utils.mail_service import send_successful_reservation_notification, send_reservation_cancelled_notification
+from data.models import Reservation, Arrangement, User
+from data.schemas_rest import reservations_schema, reservation_schema, completed_reservation_schema, arrangement_schema
+from views import reservation_bp
 
 
 @reservation_bp.get('/page/<int:page_id>')

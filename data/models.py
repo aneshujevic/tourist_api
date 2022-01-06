@@ -6,7 +6,7 @@ from flask import current_app
 from sqlalchemy import CheckConstraint, select, and_
 from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
 
-from extensions import db
+from config.extensions import db
 
 user_type_table = db.Table('user_type', db.metadata,
                            db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),

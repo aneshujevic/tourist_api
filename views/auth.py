@@ -2,15 +2,14 @@ from datetime import timedelta
 from functools import wraps
 
 import flask_jwt_extended
-from flask import request, Blueprint
+from flask import request
 from flask_jwt_extended import verify_jwt_in_request, create_access_token, create_refresh_token, jwt_required, \
     get_jwt_identity
 from werkzeug.security import check_password_hash
 
-from models import User
-from schemas_rest import user_schema
-
-auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
+from data.models import User
+from data.schemas_rest import user_schema
+from views import auth_bp
 
 
 def roles_required(*required_roles):
