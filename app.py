@@ -1,5 +1,6 @@
 from flask import Flask
 
+import account_change_request_views
 import arrangement_views
 import auth_views
 import reservation_views
@@ -28,3 +29,4 @@ def register_blueprints(app):
     app.register_blueprint(arrangement_views.arrangements_bp)
     app.register_blueprint(user_views.users_bp)
     app.register_blueprint(reservation_views.reservation_bp)
+    app.register_blueprint(account_change_request_views.acc_type_change_bp)

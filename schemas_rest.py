@@ -3,7 +3,7 @@ from datetime import date
 from flask import request
 from marshmallow_sqlalchemy import fields
 from markupsafe import escape
-from marshmallow import validate, validates, pre_load, post_load
+from marshmallow import validate, validates, pre_load, post_load, pre_dump
 
 from extensions import ma
 from models import Reservation, AccountType, Arrangement, AccountTypeChangeRequest, User
@@ -27,7 +27,7 @@ class UserSchema(ma.SQLAlchemyAutoSchema):
         model = User
 
     id = ma.auto_field(dump_only=True)
-    username = ma.auto_field(validate=[validate.Length])
+    username = ma.auto_field(validate=[validate.Length(min=5, max=32, error="Invalid length of the username.")])
     email = ma.auto_field(
         validate=[validate.Email(error="Not a valid email address."),
                   validate.Length(min=5, max=64, error="Invalid length of email address.")]
@@ -172,18 +172,28 @@ class AccountTypeChangeRequestSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = AccountTypeChangeRequest
         load_instance = True
+        load_only = ("wanted_type_id",)
 
     id = ma.auto_field(dump_only=True)
     user_id = ma.auto_field(dump_only=True)
     filing_date = ma.auto_field(dump_only=True)
     confirmation_date = ma.auto_field(dump_only=True)
     admin_confirmed_id = ma.auto_field(dump_only=True)
-
-    @pre_load
-    def process_input(self, data, **kwargs):
-        data["comment"] = escape(data["comment"])
-        return data
+    wanted_type_id = ma.auto_field(dump_only=True)
+    account_type = fields.fields.String(dump_only=True)
+    wanted_type = fields.fields.String(dump_only=True)
+    comment = ma.auto_field(required=True, validate=[validate.Length(min=5, max=1024, error="Invalid length of the comment.")])
+    granted = ma.auto_field(required=True)
 
 
 account_type_change_request_schema = AccountTypeChangeRequestSchema()
 account_type_change_requests_schema = AccountTypeChangeRequestSchema(many=True)
+
+
+class BaseAccountTypeChangeRequestSchema(AccountTypeChangeRequestSchema):
+    granted = ma.auto_field(dump_only=True)
+    comment = ma.auto_field(dump_only=True)
+
+
+base_account_type_change_request_schema = BaseAccountTypeChangeRequestSchema()
+base_account_type_change_requests_schema = BaseAccountTypeChangeRequestSchema(many=True)

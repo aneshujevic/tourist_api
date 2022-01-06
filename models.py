@@ -141,11 +141,17 @@ class AccountTypeChangeRequest(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.ForeignKey('user.id'), nullable=False)
     wanted_type_id = db.Column(db.ForeignKey('account_type.id'), nullable=False)
-    granted = db.Column(db.Boolean, nullable=True)
     filing_date = db.Column(db.DateTime, nullable=False)
     confirmation_date = db.Column(db.DateTime, nullable=True)
     admin_confirmed_id = db.Column(db.ForeignKey('user.id'), nullable=True)
-    comment = db.Column(db.Text, nullable=False)
+    granted = db.Column(db.Boolean, nullable=True)
+    comment = db.Column(db.Text, nullable=True)
+
+    @hybrid_property
+    def wanted_type(self):
+        acc_type = AccountType.query.filter_by(id=self.wanted_type_id).first()
+        return acc_type.name
+
 
     def update(self, other):
         self.confirmation_date = other.confirmation_date

@@ -126,7 +126,7 @@ def delete_reservation(arrangement_id):
 @reservation_bp.put('/<int:arrangement_id>')
 @jwt_required()
 @roles_required("ADMIN", "TOURIST")
-def delete_reservation(arrangement_id):
+def update_reservation(arrangement_id):
     user = get_current_user_custom()
 
     try:
