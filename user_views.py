@@ -7,7 +7,8 @@ from flask_jwt_extended import jwt_required
 from werkzeug.security import generate_password_hash
 
 from auth_views import roles_required, get_current_user_custom, auth_bp
-from extensions import db
+from extensions import db, mail
+from mail_service import send_successful_registration
 from models import User, AccountType, AccountTypeChangeRequest
 from schemas_rest import users_schema, type_schema, types_schema, user_schema, guide_arrangement_schema, \
     tourist_reservation_schema
@@ -108,6 +109,8 @@ def register_user():
 
         User.query.session.commit()
 
+        send_successful_registration(user.username, user.email, user.first_name, user.last_name)
+
         return {"msg": "Successfully registered."}
 
     except marshmallow.ValidationError as err:
@@ -147,6 +150,14 @@ def delete_user(user_id):
     return {"msg": "Successfully deleted a user."}
 
 
+@users_bp.get('/guides/free')
+@jwt_required()
+@roles_required("ADMIN")
+def get_free_guides():
+    # TODO: implement get free guides on certain date
+    pass
+
+
 @users_bp.get('/self')
 @jwt_required()
 def get_own_user():
@@ -156,6 +167,9 @@ def get_own_user():
     return user_schema.dump(user)
 
 
+# TODO: implement password recovery
+
+
 @users_bp.put('/self')
 @jwt_required()
 def update_own_user():
@@ -163,6 +177,7 @@ def update_own_user():
         req_user = get_current_user_custom()
         current_user = User.query.filter_by(id=req_user.id).first()
 
+        # TODO: check double password
         new_user = user_schema(request.get_json())
         current_user.update(new_user)
 

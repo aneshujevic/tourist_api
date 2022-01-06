@@ -8,6 +8,7 @@ from sqlalchemy import text
 
 from auth_views import roles_required, get_current_user_custom
 from extensions import db
+from mail_service import send_successful_reservation_notification, send_reservation_cancelled_notification
 from models import Reservation, Arrangement
 from schemas_rest import reservations_schema, reservation_schema, completed_reservation_schema, arrangements_schema, \
     arrangement_schema
@@ -78,7 +79,6 @@ def create_reservation():
             description="No such arrangement found.")
 
         if wanted_arrangement.start_date - datetime.date.today() <= datetime.timedelta(days=5):
-            # TODO: implement email notification about reservation
             return {"msg": "Wanted arrangement has expired."}, 404
         elif wanted_arrangement.seats_available < reservation.seats_needed:
             return {"msg": "There is not that much seats left."}, 404
@@ -86,7 +86,7 @@ def create_reservation():
         Reservation.query.session.add(reservation)
         Reservation.query.session.commit()
 
-        # TODO: implement email notification about reservation
+        send_successful_reservation_notification(user, reservation)
 
         return {
                    "msg": "Successfully appointed a reservation",
@@ -118,7 +118,11 @@ def delete_reservation(arrangement_id):
     Reservation.query.session.delete(reservation)
     Reservation.query.session.commit()
 
+    users = []
+
     # TODO: implement email notification about cancellation of reservation
+    for user in users:
+        send_reservation_cancelled_notification(user, reservation)
 
     return {"msg": "Successfully canceled the reservation."}
 
@@ -147,16 +151,16 @@ def update_reservation(arrangement_id):
         arrangement = Arrangement.query.filter_by(id=reservation.arrangement_id) \
             .first_or_404(description="No such arrangement exists.")
 
-        # TODO: implement email notification about changing the reservation
-
         if arrangement.seats_available >= req_seats_needed:
             reservation.seats_needed = req_seats_needed
             Reservation.query.session.commit()
 
+            send_successful_reservation_notification(user, reservation, True)
+
             return {"msg": "Reservation successfully updated.",
                     "reservation": completed_reservation_schema.dump(reservation)}
 
-        return {"msg": "There is not enough seats needed. Reservation unchanged",
+        return {"msg": "There is not enough seats needed. Reservation unchanged.",
                 "reservation": completed_reservation_schema(reservation)}
 
     except KeyError:

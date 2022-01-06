@@ -13,3 +13,13 @@ class BaseConfig(object):
     JWT_REFRESH_TOKEN_EXPIRES = timedelta(hours=3)
 
     RESULTS_PER_PAGE = 10
+
+    MAIL_SERVER = 'smtp.gmail.com'
+    MAIL_PORT = 587
+    MAIL_USE_TLS = True
+    MAIL_USE_SSL = False
+    MAIL_USERNAME = 'tourist.adm1@gmail.com'
+    MAIL_PASSWORD = 'tourist.adm1password'
+    DEFAULT_MAIL_SENDER = 'tourist.adm1@gmail.com'
+
+    

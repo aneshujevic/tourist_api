@@ -6,7 +6,8 @@ import auth_views
 import reservation_views
 import user_views
 from config import BaseConfig
-from extensions import ma, db, jwt_man, mi
+from extensions import ma, db, jwt_man, mi, mail
+from mail_service import send_successful_registration
 
 
 def create_app(config_object=BaseConfig()):
@@ -22,6 +23,7 @@ def register_extensions(app):
     ma.init_app(app)
     mi.init_app(app, db)
     jwt_man.init_app(app)
+    mail.init_app(app)
 
 
 def register_blueprints(app):

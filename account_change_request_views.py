@@ -7,7 +7,8 @@ from sqlalchemy import select
 
 from auth_views import roles_required, get_current_user_custom
 from extensions import db
-from models import AccountTypeChangeRequest, AccountType
+from mail_service import send_account_change_request_notification
+from models import AccountTypeChangeRequest, AccountType, User
 from schemas_rest import account_type_change_requests_schema, account_type_change_request_schema, \
     base_account_type_change_request_schema
 
@@ -128,9 +129,11 @@ def verify_type_change_request(request_id):
 
         AccountTypeChangeRequest.query.session.commit()
 
-        return {"msg": "Successfully verified account change request."}
+        user = User.query.filter_by(change_request.user_id).first_or_404(description="No such user found.")
 
-        # TODO: implement email notification
+        send_account_change_request_notification(user, change_request)
+
+        return {"msg": "Successfully verified account change request."}
 
     except marshmallow.ValidationError as err:
         return err.messages, 400
