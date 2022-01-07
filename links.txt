@@ -6,7 +6,7 @@ Arrangements:
 +       '/'                 - POST (create arrangement)
 +       '/<arrangement_id>' - GET (specific arrangement)
 +       '/<arrangement_id>' - DELETE (delete arrangement)
-        '/available'        - GET (get available arrangements)
++       '/available'        - GET (get available arrangements)
 
 Account type change requests:
     '/acc-type-change'

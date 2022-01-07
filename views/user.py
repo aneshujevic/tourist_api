@@ -1,4 +1,5 @@
 import datetime
+from time import time
 
 import jwt
 import marshmallow
@@ -136,6 +137,10 @@ def register_user():
 def get_reset_token():
     try:
         email = request.get_json().get('email', None)
+        expiration_time = request.get_json().get('exp')
+
+        if expiration_time < time():
+            return {"msg": "Password recovery token expired."}, 400
 
         if email is None:
             return {"msg": "Malformed request."}, 400
