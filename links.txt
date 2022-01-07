@@ -1,53 +1,53 @@
 Arrangements:
     '/arrangements'
-        '/page/<page_id>'   - GET (all arrangements)
-        '/own'              - GET (owned arrangements)
-        '/<arrangement_id>' - PUT (update arrangement) 
-        '/'                 - POST (create arrangement)
-        '/<arrangement_id>' - GET (specific arrangement)
-        '/<arrangement_id>' - DELETE (delete arrangement)
++       '/page/<page_id>'   - GET (all arrangements)
++       '/own'              - GET (owned arrangements)
++       '/<arrangement_id>' - PUT (update arrangement) 
++       '/'                 - POST (create arrangement)
++       '/<arrangement_id>' - GET (specific arrangement)
++       '/<arrangement_id>' - DELETE (delete arrangement)
         '/available'        - GET (get available arrangements)
 
 Account type change requests:
     '/acc-type-change'
-        '/page/<page_id>'   - GET (all type change requests)
-        '/own'              - GET (owned type change requests)
-        '/<request_id>/'    - GET (specific type change request)
-        ''                  - POST (submit a type change request)
-        '/<request_id>      - PUT (verify type change request)
++       '/page/<page_id>'   - GET (all type change requests)
++       '/own'              - GET (owned type change requests)
++       '/<request_id>/'    - GET (specific type change request)
++       ''                  - POST (submit a type change request)
++       '/<request_id>      - PUT (verify type change request)
 
 Authentication:
     '/auth'
-        '/login'            - POST (log in)
-        '/refresh'          - POST (refresh token)
++       '/login'            - POST (log in)
++       '/refresh'          - POST (refresh token)
 
 Reservations:
     '/reservations'
-        '/page/<page_id>'   - GET (all the reservations)
-        '/own'              - GET (own reservations)
-        ''                  - POST (create a reservation)
-        '/<arrangement_id>' - DELETE (delete a reservation)
-        '/<arrangement_id>' - PUT (update a reservation)
++       '/page/<page_id>'   - GET (all the reservations)
++       '/own'              - GET (own reservations)
++       ''                  - POST (create a reservation)
++       '/<arrangement_id>' - DELETE (delete a reservation)
++       '/<arrangement_id>' - PUT (update a reservation)
 
 Users:
     '/users'
-        '/page/<page_id>'           - GET (all users)
-        '/<user_id>'                - GET (specific user)
-        '/register'                 - POST (register)
-        '/forgot-password'          - POST (request reset token)
-        '/reset-password/<token>'   - POST (change password)
-        '/<user_id>'                - PUT (update user)
-        '/<user_id>'                - GET (delete user)
-        '/guides/free'              - GET (get free guides)
-        '/self'                     - GET (get own profile)
-        '/self'                     - PUT (update own profile)
-        '/self'                     - DELETE (delete own profile)
++       '/page/<page_id>'           - GET (all users)
++       '/<user_id>'                - GET (specific user)
++       '/register'                 - POST (register)
++       '/forgot-password'          - POST (request reset token)
++       '/reset-password/<token>'   - POST (change password)
++       '/<user_id>'                - PUT (update user)
++       '/<user_id>'                - DELETE (delete user)
++       '/guides/free'              - GET (get free guides)
++       '/self'                     - GET (get own profile)
++       '/self'                     - PUT (update own profile)
++       '/self'                     - DELETE (delete own profile)
 
 Types:
     '/types'
-        ''              - GET (get all the types)
-        '/<type_id>'    - GET (get a specific type)
-        ''              - POST (create a specific type)
-        '/<type_id>'    - DELETE (delete a specific type)
-        '/<type_id>'    - PUT (update a specific type)
++       ''              - GET (get all the types)
++       '/<type_id>'    - GET (get a specific type)
++       ''              - POST (create a specific type)
++       '/<type_id>'    - DELETE (delete a specific type)
++       '/<type_id>'    - PUT (update a specific type)
 

@@ -100,7 +100,10 @@ def submit_type_change_request():
         AccountTypeChangeRequest.query.session.add(change_request)
         AccountTypeChangeRequest.query.session.commit()
 
-        return {"msg": "Successfully submitted an account type change request."}
+        return {
+            "msg": "Successfully submitted an account type change request.",
+            "request": account_type_change_request_schema.dump(change_request)
+        }
 
     except KeyError:
         return {"msg": "Wanted type field missing."}, 400
@@ -132,7 +135,10 @@ def verify_type_change_request(request_id):
 
         send_account_change_request_notification(user, change_request)
 
-        return {"msg": "Successfully verified account change request."}
+        return {
+            "msg": "Successfully verified account change request.",
+            "request": account_type_change_request_schema.dump(change_request)
+        }
 
     except marshmallow.ValidationError as err:
         return err.messages, 400

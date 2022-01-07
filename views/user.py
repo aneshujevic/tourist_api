@@ -16,7 +16,9 @@ from models.models import User, AccountType, AccountTypeChangeRequest, Arrangeme
 from schemas.schemas_rest import users_schema, type_schema, types_schema, user_schema, guide_arrangement_schema, \
     tourist_reservation_schema
 
+types_bp = Blueprint('types', __name__, url_prefix='/types')
 users_bp = Blueprint('users', __name__, url_prefix='/users')
+users_bp.register_blueprint(types_bp)
 
 
 @users_bp.get('/page/<int:page>')
@@ -65,7 +67,7 @@ def get_all_users(page=1):
                 .offset((page - 1) * results_per_page)
         ).all()
 
-    return jsonify([users_schema.dump(user) for user in raw_users])
+    return jsonify([user_schema.dump(user[0]) for user in raw_users])
 
 
 @users_bp.get('/<int:user_id>')
@@ -118,7 +120,10 @@ def register_user():
 
         send_successful_registration(user.username, user.email, user.first_name, user.last_name)
 
-        return {"msg": "Successfully registered."}
+        return {
+            "msg": "Successfully registered.",
+            "account": user_schema.dump(user)
+        }
 
     except marshmallow.ValidationError as err:
         return err.messages, 400
@@ -187,18 +192,21 @@ def update_user(user_id):
     try:
         wanted_user = User.query.filter_by(id=user_id).first_or_404(description="No such user.")
 
-        new_user = user_schema(request.get_json())
+        new_user = user_schema.load(request.get_json())
         wanted_user.update(new_user)
 
         User.query.session.commit()
 
-        return {"msg": "User successfully updated."}
+        return {
+            "msg": "User successfully updated.",
+            "account": user_schema.dump(wanted_user)
+        }
 
     except marshmallow.ValidationError as err:
         return err.messages, 400
 
 
-@users_bp.get('/<int:user_id>')
+@users_bp.delete('/<int:user_id>')
 @jwt_required()
 @roles_required("ADMIN")
 def delete_user(user_id):
@@ -257,7 +265,7 @@ def update_own_user():
         req_user = get_current_user_custom()
         current_user = User.query.filter_by(id=req_user.id).first()
 
-        new_user = user_schema(request.get_json())
+        new_user = user_schema.load(request.get_json())
         new_user.password = generate_password_hash(
             new_user.password,
             current_app.config.get("PASSWORD_HASH_ALGORITHM"),
@@ -267,7 +275,10 @@ def update_own_user():
 
         User.query.session.commit()
 
-        return {"msg": "Profile successfully updated."}
+        return {
+            "msg": "Profile successfully updated.",
+            "account": user_schema.dump(current_user)
+        }
 
     except marshmallow.ValidationError as err:
         return err.messages, 400
@@ -282,9 +293,6 @@ def delete_own_user():
     User.query.session.commit()
 
     return {"msg": "Profile successfully deleted."}
-
-
-types_bp = Blueprint('types', __name__, url_prefix='/types')
 
 
 @types_bp.get('')
@@ -315,7 +323,10 @@ def create_type():
         AccountType.query.session.add(acc_type)
         AccountType.query.session.commit()
 
-        return {"msg": "Successfully created an account type."}
+        return {
+            "msg": "Successfully created an account type.",
+            "type": type_schema.dump(acc_type)
+        }
 
     except marshmallow.ValidationError as err:
         return err.messages, 400
@@ -343,7 +354,10 @@ def update_type(type_id):
         acc_type.name = req_name
         AccountType.query.session.commit()
 
-        return {"msg": "Successfully updated account type."}
+        return {
+            "msg": "Successfully updated account type.",
+            "type": type_schema.dump(acc_type)
+        }
 
     except KeyError as err:
         return {"msg": err}, 400

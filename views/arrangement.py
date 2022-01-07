@@ -121,7 +121,10 @@ def create_arrangement():
         Arrangement.query.session.add(arrangement)
         Arrangement.query.session.commit()
 
-        return {"msg": "Arrangement successfully created."}
+        return {
+            "msg": "Arrangement successfully created.",
+            "arrangement": arrangement_schema.dump(arrangement)
+        }
 
     except marshmallow.ValidationError as error:
         return error.messages, 400
@@ -170,7 +173,10 @@ def update_arrangement(arrangement_id):
 
             Arrangement.query.session.commit()
 
-            return {"msg": "Arrangement updated successfully."}
+            return {
+                "msg": "Arrangement updated successfully.",
+                "arrangement": arrangement_schema.dump(arrangement)
+            }
 
         except marshmallow.ValidationError as error:
             return error.messages, 400

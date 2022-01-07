@@ -33,8 +33,8 @@ def send_account_change_request_notification(user, acc_type_change_request):
     mail.send(msg)
 
 
-def send_successful_reservation_notification(user, reservation, change=False):
-    msg = Message(subject=f"Successful reservation {'change' if change else ''} to {reservation.destination}",
+def send_successful_reservation_notification(user, reservation, arrangement, change=False):
+    msg = Message(subject=f"Successful reservation {'change' if change else ''} to {arrangement.destination}",
                   recipients=[user.email],
                   body=f"Greetings {user.username}."
                        f"\n\nYour have successfully {'changed' if change else 'made'} an reservation!"
@@ -42,7 +42,7 @@ def send_successful_reservation_notification(user, reservation, change=False):
                        f"\nArrangement id: {reservation.arrangement_id}"
                        f"\nReservation price: {reservation.reservation_price}"
                        f"\nNumber of seats: {reservation.seats_needed}"
-                       f"\nDestination: {reservation.destination}"
+                       f"\nDestination: {arrangement.destination}"
                        f"\n\nHave a sound trip!"
                        f"\nAdmin team"
                   )
@@ -50,7 +50,7 @@ def send_successful_reservation_notification(user, reservation, change=False):
 
 
 def send_reservation_cancelled_notification(user, reservation):
-    msg = Message(subject=f"Reservation to {reservation.destination} CANCELED",
+    msg = Message(subject=f"Reservation to  CANCELED",
                   recipients=[user.email],
                   body=f"Greetings {user.username}."
                        f"\nWe are sorry to inform you that your reservation for arrangement {reservation.arrangement_id} has been cancelled. "

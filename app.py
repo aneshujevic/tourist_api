@@ -69,6 +69,5 @@ def register_blueprints(app):
     app.register_blueprint(auth.auth_bp)
     app.register_blueprint(arrangement.arrangements_bp)
     app.register_blueprint(user.users_bp)
-    app.register_blueprint(user.types_bp)
     app.register_blueprint(reservation.reservation_bp)
     app.register_blueprint(account_change_request.acc_type_change_bp)

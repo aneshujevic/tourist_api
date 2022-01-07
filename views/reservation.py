@@ -27,7 +27,7 @@ def get_all_reservations(page_id=1):
             .offset((page_id - 1) * current_app.config['RESULTS_PER_PAGE'])
     ).all()
 
-    return jsonify([reservations_schema.dump(reservation) for reservation in raw_reservations])
+    return jsonify([reservation_schema.dump(reservation[0]) for reservation in raw_reservations])
 
 
 @reservation_bp.get('/own')
@@ -52,7 +52,7 @@ def create_reservation():
             reservation.customer_id = user.id
 
         else:
-            req_customer_id = request.get_json()['customer']
+            req_customer_id = request.json.pop('customer')
             reservation = reservation_schema.load(request.get_json())
             reservation.customer_id = req_customer_id
 
@@ -67,7 +67,7 @@ def create_reservation():
         Reservation.query.session.add(reservation)
         Reservation.query.session.commit()
 
-        send_successful_reservation_notification(user, reservation)
+        send_successful_reservation_notification(user, reservation, wanted_arrangement)
 
         return {
                    "msg": "Successfully appointed a reservation",
@@ -137,7 +137,7 @@ def update_reservation(arrangement_id):
             reservation.seats_needed = req_seats_needed
             Reservation.query.session.commit()
 
-            send_successful_reservation_notification(user, reservation, True)
+            send_successful_reservation_notification(user, reservation, arrangement, True)
 
             return {"msg": "Reservation successfully updated.",
                     "reservation": completed_reservation_schema.dump(reservation)}

@@ -107,7 +107,7 @@ class ArrangementSchema(ma.SQLAlchemyAutoSchema):
     @validates('price')
     def validate_price(self, value):
         if value <= 0:
-            raise validate.ValidationError('Price must not be 0.')
+            raise validate.ValidationError('Price must be greater than 0.')
 
 
 arrangement_schema = ArrangementSchema()
