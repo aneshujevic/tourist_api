@@ -228,12 +228,29 @@ def get_available_arrangements():
     current_user = get_current_user_custom()
 
     with db.engine.connect() as connection:
+        # slower
+        # query_text = text(
+        #     'SELECT * FROM arrangement '
+        #     'WHERE arrangement.start_date > CURRENT_DATE + 5 AND ('
+        #     'SELECT COUNT(*) FROM reservation '
+        #     'WHERE reservation.arrangement_id = arrangement.id AND reservation.customer_id = :curr_user_id'
+        #     ') = 0;')
+
+        # faster query
+        # select all the arrangement with appropriate date which are not already reserved by the current user
         query_text = text(
             'SELECT * FROM arrangement '
-            'WHERE arrangement.start_date > CURRENT_DATE + 5 AND ('
-            'SELECT COUNT(*) FROM reservation '
-            'WHERE reservation.arrangement_id = arrangement.id AND reservation.customer_id = :curr_user_id'
-            ') = 0;')
+            'WHERE '
+                'arrangement.start_date > CURRENT_DATE + 5 '
+            'AND '
+                'arrangement.id not in ('
+                    'SELECT arrangement_id FROM reservation '
+                    'WHERE '
+                        'reservation.arrangement_id = arrangement.id '
+                    'AND '
+                        'reservation.customer_id = :curr_user_id'
+                ');'
+        )
 
         available_arrangements = connection.execute(query_text, curr_user_id=current_user.id)
 
