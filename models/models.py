@@ -136,7 +136,7 @@ class Reservation(db.Model):
         if self.seats_needed < 3:
             result = self.seats_needed * arrangement.price
         else:
-            result = 3 * arrangement.price + 0.9 * (self.seats_needed - 3)
+            result = 3 * arrangement.price + 0.9 * arrangement.price * (self.seats_needed - 3)
 
         return result
 
